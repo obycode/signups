@@ -1,0 +1,31 @@
+html
+  head
+    title Empower4Life Signups
+    meta(charset="utf-8")
+    meta(name="viewport" content="width=device-width, initial-scale=1, user-scalable=no")
+    link(rel="stylesheet" href="/assets/css/main.css")
+  body(class="landing is-preload")
+    - var title = 'Login';
+    include header
+    .outer-main
+      main
+        section(class="Main-content")
+          if loggedIn
+            p You're already logged in!
+            p
+              a(href='/logout') Click here to log out
+          else
+            if errors
+              .errors
+                ul
+                each error in errors
+                  li #{error.msg}
+            form.register(method="POST" action="/login")
+              div.form-group
+                p We'll send a new one time password to your email.
+                label(for='email') Email: 
+                input#email.form-control(type='email' name='email' inputmode='email' autocomplete='email' required value=email)
+              div.form-group
+                button(type='submit' class='login-button') Get Code
+              a(href="/register") Not registered yet? Click here to register
+      include footer

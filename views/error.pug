@@ -1,0 +1,18 @@
+html
+  head
+    title Empower4Life Signups
+    meta(charset="utf-8")
+    meta(name="viewport" content="width=device-width, initial-scale=1, user-scalable=no")
+    link(rel="stylesheet" href="/assets/css/main.css")
+  body(class="landing is-preload")
+    - var title = 'Error';
+    include header
+    .outer-main
+      main
+        section(class="Main-content")
+          p We're so sorry, something went wrong. Please try again. If the problem persists, please let us know at #[a(href="mailto:brice@empower4lifemd.org?subject=Error" target="_blank") brice@empower4lifemd.org].
+          h2 Uh Oh
+          p Context: #{context}
+          p #{error}
+          p #[a(class="button-style button-style3" href="javascript:history.back()") Go Back]
+      include footer

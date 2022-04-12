@@ -7,7 +7,7 @@ events.
 
 ## Backend
 
-### Signups Table
+### Events Table
 
 The
 [Signups Table](https://airtable.com/app087A4CurWjxse2/tbl7cueAnOMqVnxpk/viwKcpoXtRo6iiJ1b?blocks=hide)
@@ -30,7 +30,7 @@ The [Users Table](https://airtable.com/app087A4CurWjxse2/tbluy6a7DrTuTqCoR/viwcH
 - Email
 - Phone (optional)
 - Magic Code: generated secret key which can be sent to users to login to their account to modify their signups
-- Items: entries from the Items table for which this user has signed up
+- Signups: entries from the Signups table for which this user has signed up
 
 ### Items Table
 
@@ -53,12 +53,12 @@ Note that the items are grouped by Signup. The default view ("Active Items") sho
 There are two main user interfaces to the signups system.
 
 First, is the event-specific signup page:
-https://signups.empower4lifemd.org/event/<event-id>. The _event-id_ is a unique
+https://signups.empower4lifemd.org/event/`<event-id>`. The _event-id_ is a unique
 number identifying an event, corresponding to the ID column in the Signups
 table. This page shows the signup items for the specified event, with UI
 elements for a user to signup.
 
-The second main user interface page is a page for an individual volunteer/donor, available at https://signups.empower4lifemd.org/user/<user-id>. The _user-id_ is a unique number identifying a user, corresponding to the ID column in the Users table. This page shows all signups for the specified user and provides UI elements to cancel a signup.
+The second main user interface page is a page for an individual volunteer/donor, available at https://signups.empower4lifemd.org/user/. When logged in, this page shows all signups for the logged-in user and provides UI elements to cancel a signup. If not logged in, this will show to a login page.
 
 The front page, https://signups.empower4lifemd.org, shows links to all active
 signups. This link will not typically be shared, but instead the direct links to

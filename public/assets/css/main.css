@@ -1,0 +1,705 @@
+html {
+  font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
+  -ms-text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+}
+
+article,
+aside,
+details,
+figcaption,
+figure,
+footer,
+header,
+hgroup,
+main,
+menu,
+nav,
+section,
+summary {
+  display: block;
+}
+
+audio,
+canvas,
+progress,
+video {
+  display: inline-block;
+  vertical-align: baseline;
+}
+
+audio:not([controls]) {
+  display: none;
+  height: 0;
+}
+
+[hidden],
+template {
+  display: none;
+}
+
+a {
+  background-color: transparent;
+}
+
+a:active,
+a:hover {
+  outline: 0;
+}
+
+abbr[title] {
+  border-bottom: 1px dotted;
+}
+
+b,
+strong {
+  font-weight: bold;
+}
+
+dfn {
+  font-style: italic;
+}
+
+h1 {
+  font-size: 2em;
+  margin: 0.67em 0;
+}
+
+mark {
+  background: #ff0;
+  color: #000;
+}
+
+small {
+  font-size: 80%;
+}
+
+sub,
+sup {
+  font-size: 75%;
+  line-height: 0;
+  position: relative;
+  vertical-align: baseline;
+}
+
+sup {
+  top: -0.5em;
+}
+
+sub {
+  bottom: -0.25em;
+}
+
+img {
+  border: 0;
+}
+
+svg:not(:root) {
+  overflow: hidden;
+}
+
+figure {
+  margin: 1em 40px;
+}
+
+hr {
+  -moz-box-sizing: content-box;
+  box-sizing: content-box;
+  height: 0;
+}
+
+pre {
+  overflow: auto;
+}
+
+code,
+kbd,
+pre,
+samp {
+  font-family: monospace, monospace;
+  font-size: 1em;
+}
+
+button,
+input,
+optgroup,
+select,
+textarea {
+  color: inherit;
+  font: inherit;
+  margin: 0;
+}
+
+button {
+  overflow: visible;
+}
+
+button,
+select {
+  text-transform: none;
+}
+
+button,
+html input[type="button"],
+input[type="reset"],
+input[type="submit"] {
+  -webkit-appearance: button;
+  cursor: pointer;
+}
+
+button[disabled],
+html input[disabled] {
+  cursor: default;
+}
+
+button::-moz-focus-inner,
+input::-moz-focus-inner {
+  border: 0;
+  padding: 0;
+}
+
+input {
+  line-height: normal;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  box-sizing: border-box;
+  padding: 0;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  height: auto;
+}
+
+input[type="search"] {
+  -webkit-appearance: textfield;
+  -moz-box-sizing: content-box;
+  -webkit-box-sizing: content-box;
+  box-sizing: content-box;
+}
+
+input[type="search"]::-webkit-search-cancel-button,
+input[type="search"]::-webkit-search-decoration {
+  -webkit-appearance: none;
+}
+
+fieldset {
+  border: 1px solid silver;
+  margin: 0 2px;
+  padding: 0.35em 0.625em 0.75em;
+}
+
+legend {
+  border: 0;
+  padding: 0;
+}
+
+textarea {
+  overflow: auto;
+}
+
+optgroup {
+  font-weight: bold;
+}
+
+.outer-main {
+  background-color: #f5f5f5;
+}
+
+main {
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 35px 50px;
+}
+
+@media screen and (max-width: 767px) {
+  .responsive-font-size-h1 {
+    font-size: 32px;
+    letter-spacing: 0px;
+  }
+}
+
+@media screen and (max-width: 767px) {
+  .responsive-font-size-h2 {
+    font-size: 28px;
+    letter-spacing: 0px;
+  }
+}
+
+h1,
+h2,
+h3 {
+  text-rendering: optimizeLegibility;
+}
+
+h1:first-child,
+h2:first-child,
+h3:first-child {
+  margin-top: 0;
+}
+
+h1:last-child,
+h2:last-child,
+h3:last-child {
+  margin-bottom: 0;
+}
+
+h1 {
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: 700;
+  font-size: 32px;
+  line-height: 1em;
+  font-family: sofia-pro;
+  font-weight: 900;
+  font-style: normal;
+  font-size: 120px;
+  letter-spacing: 0em;
+  line-height: 0.75em;
+  text-transform: none;
+}
+
+@media screen and (max-width: 767px) {
+  h1 {
+    font-size: 32px;
+    letter-spacing: 0px;
+  }
+}
+
+h2 {
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: 700;
+  font-size: 24px;
+  font-family: sofia-pro;
+  font-weight: 600;
+  font-style: normal;
+  font-size: 40px;
+  letter-spacing: 0em;
+  line-height: 1.2em;
+  text-transform: none;
+}
+
+@media screen and (max-width: 767px) {
+  h2 {
+    font-size: 28px;
+    letter-spacing: 0px;
+  }
+}
+
+h3 {
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: 0em;
+  line-height: 1.2em;
+  text-transform: none;
+  font-family: sofia-pro;
+  font-weight: 600;
+  font-style: normal;
+  font-size: 15.25px;
+  letter-spacing: 0.1em;
+  line-height: 1.55em;
+  text-transform: uppercase;
+}
+
+h1 + h1,
+h1 + h2,
+h1 + h3,
+h2 + h1,
+h2 + h2,
+h2 + h3,
+h3 + h1,
+h3 + h2,
+h3 + h3 {
+  margin-top: 15px;
+}
+
+h1 {
+  color: #4a4a4a;
+}
+
+h1 a {
+  padding-bottom: 0.05em;
+  border-bottom-width: 1px;
+  border-bottom-style: solid;
+  border-bottom-color: rgba(74, 74, 74, 0.3);
+  -webkit-transition: border-color 0.15s ease-out, color 0.15s ease-out;
+  -moz-transition: border-color 0.15s ease-out, color 0.15s ease-out;
+  -ms-transition: border-color 0.15s ease-out, color 0.15s ease-out;
+  -o-transition: border-color 0.15s ease-out, color 0.15s ease-out;
+  transition: border-color 0.15s ease-out, color 0.15s ease-out;
+}
+
+h1 a:hover {
+  color: rgba(74, 74, 74, 0.6);
+  border-color: rgba(74, 74, 74, 0.15);
+}
+
+h2 {
+  color: #4a4a4a;
+}
+
+h2 a {
+  padding-bottom: 0.05em;
+  border-bottom-width: 1px;
+  border-bottom-style: solid;
+  border-bottom-color: rgba(74, 74, 74, 0.3);
+  -webkit-transition: border-color 0.15s ease-out, color 0.15s ease-out;
+  -moz-transition: border-color 0.15s ease-out, color 0.15s ease-out;
+  -ms-transition: border-color 0.15s ease-out, color 0.15s ease-out;
+  -o-transition: border-color 0.15s ease-out, color 0.15s ease-out;
+  transition: border-color 0.15s ease-out, color 0.15s ease-out;
+}
+
+h2 a:hover {
+  color: rgba(74, 74, 74, 0.6);
+  border-color: rgba(74, 74, 74, 0.15);
+}
+
+h3 {
+  color: #ef452e;
+}
+
+h3 a {
+  padding-bottom: 0.05em;
+  border-bottom-width: 1px;
+  border-bottom-style: solid;
+  border-bottom-color: rgba(239, 69, 46, 0.3);
+  -webkit-transition: border-color 0.15s ease-out, color 0.15s ease-out;
+  -moz-transition: border-color 0.15s ease-out, color 0.15s ease-out;
+  -ms-transition: border-color 0.15s ease-out, color 0.15s ease-out;
+  -o-transition: border-color 0.15s ease-out, color 0.15s ease-out;
+  transition: border-color 0.15s ease-out, color 0.15s ease-out;
+}
+
+h3 a:hover {
+  color: rgba(239, 69, 46, 0.6);
+  border-color: rgba(239, 69, 46, 0.15);
+}
+
+@media screen and (max-width: 767px) {
+  h1,
+  h2,
+  h3 {
+    -webkit-hyphens: auto;
+    -moz-hyphens: auto;
+    -ms-hyphens: auto;
+    hyphens: auto;
+  }
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+a:active,
+a:focus {
+  outline: 0;
+}
+
+.center {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 100%;
+  padding-bottom: 24px;
+}
+
+.signup-table {
+  margin-left: auto;
+  margin-right: auto;
+  font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
+  border-collapse: collapse;
+  min-width: 450px;
+  width: 100%;
+}
+
+.signup-table td,
+.signup-table th {
+  border: 1px solid #ddd;
+  padding: 8px 4px;
+}
+
+.signup-table tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
+
+.signup-table tr:hover {
+  background-color: #ddd;
+}
+
+.signup-table th {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  text-align: center;
+  background-color: #65cab5;
+  color: white;
+}
+
+.signup-table tr {
+  text-align: center;
+}
+
+.button-style {
+  border-radius: 300px;
+  padding: 12px 18px;
+  font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  font-style: normal;
+  text-transform: none;
+  letter-spacing: 0em;
+  color: #fff;
+  border-color: #fff;
+  background-color: #000;
+  text-decoration: none;
+}
+
+.button-style1 {
+  background-color: #782f9a;
+}
+
+.button-style2 {
+  background-color: #65cab5;
+}
+
+.button-style3 {
+  border: 2px solid #e37263;
+  background-color: #e37262;
+  color: white;
+}
+
+.button-style3:hover {
+  background-color: white;
+  color: #e37262;
+}
+
+.bottom {
+  text-align: center;
+  padding: 20 0;
+}
+
+input:not([type="submit"]) {
+  width: 100%;
+  padding: 12px 20px;
+  margin: 8px 0;
+  display: inline-block;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+textarea {
+  width: 100%;
+  padding: 12px 20px;
+  margin: 8px 0;
+  display: inline-block;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+input[type="submit"] {
+  width: 100%;
+  background-color: #e37262;
+  color: white;
+  padding: 14px 20px;
+  margin: 8px 0;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+input[type="submit"]:hover {
+  opacity: 80%;
+}
+
+.sponsor-form {
+  border-radius: 5px;
+  background-color: #f2f2f2;
+  padding: 20px;
+  max-width: 600;
+}
+
+.clear:after {
+  display: block;
+  visibility: hidden;
+  font-size: 0;
+  height: 0;
+  clear: both;
+  content: ".";
+}
+
+.v6-visually-hidden {
+  position: absolute !important;
+  clip: rect(1px, 1px, 1px, 1px);
+  padding: 0 !important;
+  border: 0 !important;
+  height: 1px !important;
+  width: 1px !important;
+  overflow: hidden;
+}
+
+.sqs-g {
+  letter-spacing: -0.31em;
+  text-rendering: optimizespeed;
+}
+
+.opera-only :-o-prefocus,
+.sqs-g {
+  word-spacing: -0.43em;
+}
+
+main p {
+  margin: 32px;
+}
+
+.time {
+  font-weight: bold;
+}
+
+.spots {
+  color: #4a4a4a;
+}
+
+.title {
+  width: 100%;
+  text-align: center;
+  flex-grow: 2;
+}
+
+/* Style the header with a grey background and some padding */
+.header {
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+  overflow: hidden;
+  padding: 20px 10px;
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+/* Style the header links */
+.header a {
+  color: black;
+  text-align: center;
+  padding: 12px;
+  text-decoration: none;
+  font-size: 18px;
+  line-height: 25px;
+}
+
+.break {
+  flex-basis: 100%;
+  height: 0;
+}
+
+.signup {
+  display: flex;
+  justify-content: center;
+}
+
+/* Style the logo link (notice that we set the same value of line-height and font-size to prevent the header to increase when the font gets bigger */
+.logo {
+  position: relative;
+  left: 16px;
+  font-size: 25px;
+  font-weight: bold;
+}
+
+.logo img {
+  max-width: 100%;
+  max-height: 10vh;
+}
+
+.header-right {
+  text-align: right;
+  align-self: center;
+}
+
+.header-right a {
+  color: #e37262;
+}
+
+/* Change the background color on mouse-over */
+.header-right a:hover {
+  color: #782f9a;
+}
+
+footer {
+  display: flex;
+  justify-content: center;
+  padding-bottom: 32px;
+}
+
+footer a {
+  align-self: center;
+  border-radius: 300px;
+  border: 2px solid #e37262;
+  background-color: #e37262;
+  color: white;
+  padding: 12px 92px;
+  max-width: 90%;
+}
+
+/* Change the background color on mouse-over */
+footer a:hover {
+  background-color: white;
+  color: #e37262;
+}
+
+hr {
+  margin-top: 32px;
+}
+
+.event {
+  display: flex;
+}
+
+.event-column {
+  flex: 1;
+}
+
+.event img {
+  max-width: 100%;
+}
+
+.login-button {
+  display: inline-block;
+  width: 100%;
+  background-color: #65cab5;
+  color: white;
+  padding: 16px;
+  border-radius: 8px;
+  text-align: center;
+  font-size: 1.5em;
+  cursor: pointer;
+
+  border-width: 0;
+  border-style: none;
+  outline: none;
+
+  box-shadow: 0px -3px rgba(0,0,0,0.2) inset;
+}
+
+/* Add media queries for responsiveness - when the screen is 500px wide or less, stack the links on top of each other */
+@media screen and (max-width: 767px) {
+  .title {
+    padding-left: 32px;
+    text-align: left;
+  }
+  .header-right {
+    display: none;
+  }
+  main p {
+    margin-inline: 0;
+  }  
+}

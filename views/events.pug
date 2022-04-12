@@ -1,0 +1,22 @@
+html
+  head
+    title Empower4Life Signups
+    meta(charset="utf-8")
+    meta(name="viewport" content="width=device-width, initial-scale=1, user-scalable=no")
+    link(rel="stylesheet" href="/assets/css/main.css")
+  body(class="landing is-preload")
+    - var title = 'Events';
+    include header
+    .outer-main
+      main
+        section(class="Main-content")
+          each event in events
+            .event
+              .event-column
+                h2 #{event.Title}
+                p #{event.Description}
+                a(class="button-style button-style3" href="/event/" + event.id) Go to Sign Up Page
+              .event-column
+                img(src=event.Image, alt=event.Title)
+            hr
+      include footer
