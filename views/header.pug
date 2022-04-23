@@ -5,6 +5,8 @@
         .header-right
           a(href='/') Home
           a(href='/user') My Signups
+          if loggedIn
+            a(href='/signout') Sign Out
         .break
         .title
           h1 #{title}

@@ -22,7 +22,7 @@ html
                   li #{error.msg}
             form.register(method="POST" action="/login")
               div.form-group
-                p We'll send a new one time password to your email.
+                p We'll send a magic link to your email. No password required!
                 label(for='email') Email: 
                 input#email.form-control(type='email' name='email' inputmode='email' autocomplete='email' required value=email)
               div.form-group

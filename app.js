@@ -40,43 +40,59 @@ app.use(
   })
 );
 
-function isLoggedIn(req) {
+function isLoggedIn(req, res) {
   const token = req.cookies.token;
 
   if (!token) {
-    return false;
+    return undefined;
   }
 
   var jwtPayload;
   try {
-    jwtPayload = jwt.verify(token, process.env.JWT_SECRET)
-  } catch(e) {
+    jwtPayload = jwt.verify(token, process.env.JWT_SECRET);
+  } catch (e) {
     console.log("isLoggedIn:", e.toString());
-    return false;
+    return undefined;
   }
 
   return jwtPayload.userID;
 }
 
-function isLoggingIn(req) {
-  const token = req.cookies.token;
-
-  if (!token) {
-    return false;
-  }
-
-  var jwtPayload;
+async function sendMagicLink(email, userID, code) {
+  let link = `${process.env.BASE_URL}/magic?user=${userID}&code=${code}`;
+  let emailBody = pug.renderFile("views/e4l-mail.pug", {
+    title: "Empower4Life Signups",
+    preheader: "Your magic link!",
+    header: {
+      src: "https://images.squarespace-cdn.com/content/v1/5e0f48b1f2de9e7798c9150b/1581484830548-NDTK6YHUVSJILPCCMDPB/FINAL-_2_.png?format=750w",
+      alt: "Empower4Life Logo",
+    },
+    bodyTop: pug.renderFile("views/magic-link-body.pug"),
+    button: {
+      url: link,
+      text: "Sign in",
+    },
+  });
+  emailBody = await inlineCss(emailBody, {
+    url: `file://${process.cwd()}/public/`,
+    preserveMediaQueries: true,
+  });
+  const msg = {
+    to: email,
+    from: "Empower4Life <jennifer@empower4lifemd.org>",
+    subject: "Thanks for your support!",
+    text: pug.renderFile("views/magic-link-text.pug", { link: link }),
+    html: emailBody,
+  };
   try {
-    jwtPayload = jwt.verify(token, process.env.JWT_SECRET)
-  } catch(e) {
-    console.log("isLoggingIn:", e.toString());
-    return false;
+    sgMail.send(msg);
+  } catch (e) {
+    console.log("Error sending mail:", e);
   }
-
-  return jwtPayload.login;
 }
 
 app.get("/", async (req, res) => {
+  let userID = isLoggedIn(req, res);
   var events = [];
 
   base("Events")
@@ -106,6 +122,7 @@ app.get("/", async (req, res) => {
           });
         }
         res.render("events", {
+          loggedIn: userID,
           events: events,
         });
       }
@@ -113,27 +130,121 @@ app.get("/", async (req, res) => {
 });
 
 app.get("/user", async (req, res) => {
-  let userID = isLoggedIn(req);
+  let userID = isLoggedIn(req, res);
   if (!userID) {
     return res.redirect("/login");
   }
-  res.render("user");
+  res.render("user", {
+    loggedIn: userID,
+  });
 });
 
-app.get("/logout", async (req, res) => {
+app.get(
+  "/magic",
+  [
+    check("user", "invalid user").isInt(),
+    check("code", "invalid code").trim().escape(),
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      var data = {
+        errors: errors.array(),
+      };
+      return res.render("login", data);
+    }
+
+    let users = await base("Users")
+      .select({
+        filterByFormula: `{ID} = '${req.query.user}'`,
+      })
+      .all()
+      .catch((err) => {
+        console.log(`Error retrieving user: ${err}`);
+        return res.render("error", {
+          context: "Error retrieving account.",
+          error: err.toString(),
+        });
+      });
+
+    if (!users.length) {
+      console.log(`User ${req.query.user} not found`);
+      return res.render("error", {
+        context: "User not found.",
+        error: "Please try again.",
+      });
+    }
+    let user = users[0];
+    if (user.get("Magic Code") == req.query.code) {
+      const token = jwt.sign(
+        { userID: req.query.user },
+        process.env.JWT_SECRET,
+        {
+          algorithm: "HS256",
+          expiresIn: "14d",
+        }
+      );
+
+      res.cookie("token", token, {
+        maxAge: 14 * 24 * 60 * 60 * 1000,
+        httpOnly: true,
+      });
+    }
+    res.redirect("/user");
+  }
+);
+
+app.get("/signout", async (req, res) => {
   res.clearCookie("token");
   res.render("login");
 });
 
 app.get("/login", async (req, res) => {
-  let userID = isLoggedIn(req);
-  let item = req.query.item;
-  res.render("login", {
-    loggedIn: userID,
-    item: item,
-  });
+  res.render("login");
 });
 
+app.post(
+  "/login",
+  [check("email", "Missing or invalid email").isEmail()],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      var data = {
+        errors: errors.array(),
+      };
+      return res.render("login", data);
+    }
+
+    let users = await base("Users")
+      .select({
+        filterByFormula: `{Email} = '${req.body.email}'`,
+      })
+      .all()
+      .catch((err) => {
+        console.error(err);
+        return res.render("error", {
+          context: "Error retrieving account.",
+          error: err.toString(),
+        });
+      });
+
+    if (!users.length) {
+      res.render("login", {
+        email: req.body.email,
+        errors: [{ msg: "Email address not found" }],
+      });
+    }
+    let user = users[0];
+    sendMagicLink(req.body["email"], user.get("ID"), user.get("Magic Code"));
+
+    res.render("link-sent");
+  }
+);
+
 const server = app.listen(process.env.PORT, "0.0.0.0", () => {
-  console.log(`Express running → PORT ${server.address().port}`);
+  console.log(
+    `Express running → http://${server.address().address}:${
+      server.address().port
+    }`
+  );
 });
