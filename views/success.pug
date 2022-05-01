@@ -10,15 +10,5 @@ html
     .outer-main
       main
         section(class="Main-content")
-          if error
-            .error #{error}
-          each event in events
-            .row
-              .column
-                h2 #{event.Title}
-                p #{event.Description}
-                a(class="button-style button-style3" href="/event/" + event.ID) Go to Sign Up Page
-              .column
-                img(src=event.Image, alt=event.Title)
-            hr
+          p Sign up successful! Please check your email for the details.
       include footer

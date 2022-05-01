@@ -239,15 +239,15 @@ h3 {
   text-rendering: optimizeLegibility;
 }
 
-h1:first-child,
+h1:first-child /*,
 h2:first-child,
-h3:first-child {
+h3:first-child */ {
   margin-top: 0;
 }
 
-h1:last-child,
+h1:last-child /*,
 h2:last-child,
-h3:last-child {
+h3:last-child */ {
   margin-bottom: 0;
 }
 
@@ -463,11 +463,23 @@ a:focus {
 }
 
 .button-style1 {
+  border: 2px solid #782f9a;
   background-color: #782f9a;
 }
 
+.button-style1:hover {
+  background-color: white;
+  color: #782f9a;
+}
+
 .button-style2 {
+  border: 2px solid #65cab5;
   background-color: #65cab5;
+}
+
+.button-style2:hover {
+  background-color: white;
+  color: #65cab5;
 }
 
 .button-style3 {
@@ -637,7 +649,8 @@ main p {
 footer {
   display: flex;
   justify-content: center;
-  padding-bottom: 32px;
+  padding: 32px 0;
+  background-color: white;
 }
 
 footer a {
@@ -656,20 +669,28 @@ footer a:hover {
   color: #e37262;
 }
 
-hr {
-  margin-top: 32px;
-}
-
-.event {
+.row {
   display: flex;
 }
 
-.event-column {
+.column {
   flex: 1;
 }
 
-.event img {
+.row img {
   max-width: 100%;
+}
+
+.event {
+  text-align: center;
+}
+
+.event img {
+  max-height: 50vh;
+}
+
+.slots {
+  font-weight: bold;
 }
 
 .login-button {

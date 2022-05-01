@@ -25,6 +25,7 @@ html
                 p We'll send a magic link to your email. No password required!
                 label(for='email') Email: 
                 input#email.form-control(type='email' name='email' inputmode='email' autocomplete='email' required value=email)
+                input(type='hidden' name='item' value=item)
               div.form-group
                 button(type='submit' class='login-button') Get Code
               a(href="/register") Not registered yet? Click here to register
