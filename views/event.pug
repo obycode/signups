@@ -22,7 +22,7 @@ html
                   p #{item.Notes}
                 .column
                   p #{item.Start} - #{item.End}
-                  if item.Have <= item.Needed
+                  if item.Have < item.Needed
                     span.slots #{item.Have} of #{item.Needed} Slots Filled
                     p 
                       if loggedIn

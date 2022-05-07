@@ -1,0 +1,9 @@
+h2 Thanks for signing up!
+p Here are the details of your signup:
+ul
+  li #[h3 #{item.Title}]
+  li #[strong Details:] #{item.Notes}
+  if item.Start
+    li #[strong Time:] #{item.Start} - #{item.End}
+  li #[strong Signed up for:] #{count}
+  li #[strong Comment:] #{comment}

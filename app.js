@@ -58,7 +58,7 @@ function isLoggedIn(req, res) {
   return jwtPayload.userID;
 }
 
-async function sendMagicLink(email, item, userID, code) {
+async function sendMagicLink(email, userID, code, item) {
   let link = `${process.env.BASE_URL}/magic?user=${userID}&code=${code}&item=${item}`;
   let emailBody = pug.renderFile("views/e4l-mail.pug", {
     title: "Empower4Life Signups",
@@ -82,6 +82,56 @@ async function sendMagicLink(email, item, userID, code) {
     from: "Empower4Life <jennifer@empower4lifemd.org>",
     subject: "Your magic link!",
     text: pug.renderFile("views/magic-link-text.pug", { link: link }),
+    html: emailBody,
+  };
+  try {
+    sgMail.send(msg);
+  } catch (e) {
+    console.log("Error sending mail:", e);
+  }
+}
+
+async function sendConfirmation(email, item, count, comment) {
+  let link = `${process.env.BASE_URL}/user`;
+  let emailBody = pug.renderFile("views/e4l-mail.pug", {
+    title: "Empower4Life Signups",
+    preheader: "Thanks for signing up!",
+    header: {
+      src: "https://images.squarespace-cdn.com/content/v1/5e0f48b1f2de9e7798c9150b/1581484830548-NDTK6YHUVSJILPCCMDPB/FINAL-_2_.png?format=750w",
+      alt: "Empower4Life Logo",
+    },
+    bodyTop: pug.renderFile("views/confirmation.pug", {
+      item: item,
+      count: count,
+      comment: comment,
+    }),
+    button: {
+      url: link,
+      text: "Manage Signups",
+    },
+  });
+  emailBody = await inlineCss(emailBody, {
+    url: `file://${process.cwd()}/public/`,
+    preserveMediaQueries: true,
+  });
+  console.log(
+    pug.renderFile("views/confirmation-text.pug", {
+      item: item,
+      count: count,
+      link: link,
+      comment: comment,
+    })
+  );
+  const msg = {
+    to: email,
+    from: "Empower4Life <jennifer@empower4lifemd.org>",
+    subject: "Thanks for signing up!",
+    text: pug.renderFile("views/confirmation-text.pug", {
+      item: item,
+      count: count,
+      link: link,
+      comment: comment,
+    }),
     html: emailBody,
   };
   try {
@@ -142,7 +192,7 @@ app.get("/user", async (req, res) => {
 app.get(
   "/magic",
   [
-    check("user", "invalid user").isInt(),
+    check("user", "invalid user").trim().escape(),
     check("code", "invalid code").trim().escape(),
     check("item").optional().trim().escape(),
   ],
@@ -156,11 +206,8 @@ app.get(
       return res.render("login", data);
     }
 
-    let users = await base("Users")
-      .select({
-        filterByFormula: `{ID} = '${req.query.user}'`,
-      })
-      .all()
+    let user = await base("Users")
+      .find(req.query.user)
       .catch((err) => {
         console.log(`Error retrieving user: ${err}`);
         return res.render("error", {
@@ -169,14 +216,6 @@ app.get(
         });
       });
 
-    if (!users.length) {
-      console.log(`User ${req.query.user} not found`);
-      return res.render("error", {
-        context: "User not found.",
-        error: "Please try again.",
-      });
-    }
-    let user = users[0];
     if (user.get("Magic Code") == req.query.code) {
       const token = jwt.sign(
         { userID: req.query.user },
@@ -252,9 +291,9 @@ app.post(
     let user = users[0];
     sendMagicLink(
       req.body["email"],
-      req.body.item,
-      user.get("ID"),
-      user.get("Magic Code")
+      user.id,
+      user.get("Magic Code"),
+      req.body.item
     );
 
     res.render("link-sent");
@@ -283,7 +322,7 @@ async function renderEvent(userID, record, res) {
       Start: item.get("Start"),
       End: item.get("End"),
       Needed: item.get("Needed"),
-      Have: item.get("Users")?.length ?? 0,
+      Have: item.get("Have"),
     };
   });
   return res.render("event", {
@@ -341,8 +380,94 @@ app.get(
   [check("item", "Missing or invalid item ID").trim().escape()],
   async (req, res) => {
     let userID = isLoggedIn(req, res);
-    console.log(`Signing up ${userID} for item ${req.query.item}`);
-    return res.render("success");
+    let item = await base("Items")
+      .find(req.query.item)
+      .catch((err) => {
+        console.log(`Error retrieving item: ${err}`);
+        return res.render("error", {
+          context: "Error retrieving item.",
+          error: err.toString(),
+        });
+      });
+
+    return res.render("signup", {
+      loggedIn: userID,
+      itemID: req.query.item,
+      eventID: item.get("Event")[0],
+      item: item.fields,
+    });
+  }
+);
+
+app.post(
+  "/signup",
+  [
+    check("item", "Missing or invalid item ID").trim().escape(),
+    check("event", "Missing or invalid event ID").trim().escape(),
+    check("quantity", "Missing or invalid quantity").isInt(),
+    check("comment").optional().trim(),
+  ],
+  async (req, res) => {
+    let userID = isLoggedIn(req, res);
+    if (!userID) {
+      return res.render("error", {
+        context: "Signup submitted",
+        error: "user not logged in",
+      });
+    }
+
+    let count = parseInt(req.body.quantity);
+    let comment = req.body.comment;
+
+    await base("Signups")
+      .create([
+        {
+          fields: {
+            Item: [req.body.item],
+            User: [userID],
+            Number: count,
+            Comments: comment,
+          },
+        },
+      ])
+      .catch((err) => {
+        console.error(err);
+        return res.render("error", {
+          loggedIn: userID,
+          context: "Failed to store signup",
+          error: err.toString(),
+        });
+      });
+
+    let user = await base("Users")
+      .find(userID)
+      .catch((err) => {
+        console.log(`Error retrieving user: ${err}`);
+        return res.render("error", {
+          context: "Error retrieving user.",
+          error: err.toString(),
+        });
+      });
+
+    let item = await base("Items")
+      .find(req.body.item)
+      .catch((err) => {
+        console.log(`Error retrieving item: ${err}`);
+        return res.render("error", {
+          context: "Error retrieving item.",
+          error: err.toString(),
+        });
+      });
+
+    sendConfirmation(user.get("Email"), item.fields, count, comment);
+
+    return res.render("success", {
+      loggedIn: userID,
+      item: item.fields,
+      count: count,
+      comment: comment,
+      event: req.body.event,
+    });
   }
 );
 

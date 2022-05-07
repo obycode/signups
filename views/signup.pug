@@ -1,0 +1,26 @@
+html
+  head
+    title Empower4Life Signups
+    meta(charset="utf-8")
+    meta(name="viewport" content="width=device-width, initial-scale=1, user-scalable=no")
+    link(rel="stylesheet" href="/assets/css/main.css")
+  body(class="landing is-preload")
+    - var title = "Sign Me Up";
+    include header
+    .outer-main
+      main
+        section(class="Main-content")
+          h3 #{item.Title}
+          p #{item.Start} - #{item.End}
+          p #{item.Notes}
+          form.signup(method="POST" action="/signup")
+            .form-group 
+              label(for='comment') Comment: 
+              textarea#comment(name="comment" cols="30" rows="4") 
+              label(for="quantity") Quantity:
+              input#quantity.form-control(type='number' name='quantity' value=1)
+              input#item(type='hidden' name='item' value=itemID)
+              input#item(type='hidden' name='event' value=eventID)
+              .center
+                button(type='submit' class='button-style button-style2') Sign Up
+      include footer

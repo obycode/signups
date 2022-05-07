@@ -5,10 +5,17 @@ html
     meta(name="viewport" content="width=device-width, initial-scale=1, user-scalable=no")
     link(rel="stylesheet" href="/assets/css/main.css")
   body(class="landing is-preload")
-    - var title = 'Events';
+    - var title = "Thank You";
     include header
     .outer-main
       main
         section(class="Main-content")
-          p Sign up successful! Please check your email for the details.
+          p Sign up successful! We've sent the details to your email.
+          h3 #{item.Title}
+          p #{item.Start} - #{item.End}
+          p #{item.Notes}
+          p Signed up for: #{count}
+          p Comment: #{comment}
+          p
+            a(href=`/event/${event}` class='button-style button-style1') Sign up for another
       include footer
