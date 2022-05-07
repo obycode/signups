@@ -115,14 +115,6 @@ async function sendConfirmation(email, item, count, comment) {
     url: `file://${process.cwd()}/public/`,
     preserveMediaQueries: true,
   });
-  console.log(
-    pug.renderFile("views/confirmation-text.pug", {
-      item: item,
-      count: count,
-      link: link,
-      comment: comment,
-    })
-  );
   const msg = {
     to: email,
     from: "Empower4Life <jennifer@empower4lifemd.org>",
@@ -371,7 +363,6 @@ app.post(
 
     // If an account already exists for this email, just send the magic code email
     if (users.length > 0) {
-      console.log("found user!!!");
       let user = users[0];
       sendMagicLink(
         req.body["email"],
@@ -633,7 +624,7 @@ app.post(
       await base("Signups")
         .destroy([req.body.signup])
         .catch((err) => {
-          console.log(`Error retrieving item: ${err}`);
+          console.log(`Error deleting signup: ${err}`);
           return res.render("error", {
             context: "Error deleting signup.",
             error: err.toString(),
