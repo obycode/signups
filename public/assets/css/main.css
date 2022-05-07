@@ -362,7 +362,7 @@ h2 a:hover {
   border-color: rgba(74, 74, 74, 0.15);
 }
 
-h3 {
+.main h3 {
   color: #ef452e;
 }
 
@@ -533,6 +533,10 @@ input[type="submit"]:hover {
   opacity: 80%;
 }
 
+.center {
+  text-align: center;
+}
+
 .sponsor-form {
   border-radius: 5px;
   background-color: #f2f2f2;
@@ -647,34 +651,54 @@ main p {
 }
 
 footer {
-  display: flex;
-  justify-content: center;
   padding: 32px 0;
-  background-color: white;
+  color: rgba(255, 255, 255, 0.75);
+  background-color: #363636;
+}
+
+.footer-inner {
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 35px 50px;
 }
 
 footer a {
-  align-self: center;
-  border-radius: 300px;
-  border: 2px solid #e37262;
-  background-color: #e37262;
-  color: white;
-  padding: 12px 92px;
-  max-width: 90%;
+  padding-bottom: 0.05em;
+  border-bottom-width: 1px;
+  border-bottom-style: solid;
+  border-bottom-color: rgba(255, 255, 255, 0.3);
+  transition: border-color 0.15s ease-out, color 0.15s ease-out;
 }
 
-/* Change the background color on mouse-over */
 footer a:hover {
-  background-color: white;
-  color: #e37262;
+  color: rgba(255, 255, 255, 0.6);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+footer p {
+  line-height: 1.8em;
+}
+
+.box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .row {
   display: flex;
+  justify-content: space-around;
 }
 
 .column {
   flex: 1;
+  padding: 16px;
+}
+
+.column-2 {
+  flex: 2;
+  padding: 16px;
 }
 
 .row img {
@@ -687,6 +711,8 @@ footer a:hover {
 
 .event img {
   max-height: 50vh;
+  border: solid #555;
+  padding: 8px;
 }
 
 .slots {
@@ -699,7 +725,7 @@ footer a:hover {
   background-color: #65cab5;
   color: white;
   padding: 16px;
-  border-radius: 8px;
+  border-radius: 300px;
   text-align: center;
   font-size: 1.5em;
   cursor: pointer;
@@ -707,8 +733,6 @@ footer a:hover {
   border-width: 0;
   border-style: none;
   outline: none;
-
-  box-shadow: 0px -3px rgba(0,0,0,0.2) inset;
 }
 
 /* Add media queries for responsiveness - when the screen is 500px wide or less, stack the links on top of each other */
@@ -722,5 +746,5 @@ footer a:hover {
   }
   main p {
     margin-inline: 0;
-  }  
+  }
 }
