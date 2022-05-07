@@ -185,7 +185,35 @@ app.get("/user", async (req, res) => {
   if (!userID) {
     return res.redirect("/login");
   }
+
+  // Retrieve the user to get the signups
+  let signups = await base("Signups")
+    .select({
+      filterByFormula: `AND({Active}, {User ID} = '${userID}')`,
+      view: "API",
+    })
+    .all()
+    .catch((err) => {
+      console.error(err);
+      return res.render("error", {
+        context: "Error retrieving signups.",
+        error: err.toString(),
+      });
+    });
+
   res.render("user", {
+    signups: signups.map((signup) => {
+      return {
+        id: signup.id,
+        title: signup.get("Item Title"),
+        count: signup.get("Number"),
+        item: signup.get("Item")[0],
+        start: signup.get("Start"),
+        end: signup.get("End"),
+        notes: signup.get("Notes"),
+      };
+    }),
+    success: req.query.success,
     loggedIn: userID,
   });
 });
@@ -565,6 +593,59 @@ app.post(
       comment: comment,
       event: req.body.event,
     });
+  }
+);
+
+app.post(
+  "/delete",
+  [check("signup", "Missing signup ID").trim().escape()],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      var data = {
+        errors: errors.array(),
+      };
+      return res.render("error", {
+        context: "Signup deletion attempted",
+        error: "Missing signup ID",
+      });
+    }
+
+    let userID = isLoggedIn(req, res);
+    if (!userID) {
+      return res.render("error", {
+        context: "Signup deletion attempted",
+        error: "user not logged in",
+      });
+    }
+
+    let signup = await base("Signups")
+      .find(req.body.signup)
+      .catch((err) => {
+        console.log(`Error retrieving signup: ${err}`);
+        return res.render("error", {
+          context: "Error retrieving signup.",
+          error: err.toString(),
+        });
+      });
+
+    if (signup.get("User ID") == userID) {
+      await base("Signups")
+        .destroy([req.body.signup])
+        .catch((err) => {
+          console.log(`Error retrieving item: ${err}`);
+          return res.render("error", {
+            context: "Error deleting signup.",
+            error: err.toString(),
+          });
+        });
+      res.redirect("/user?success=1");
+    } else {
+      return res.render("error", {
+        context: "Error deleting signup.",
+        error: "Invalid user ID.",
+      });
+    }
   }
 );
 
