@@ -9,6 +9,7 @@ var inlineCss = require("inline-css");
 const neoncrm = require("@obycode/neoncrm");
 var cookieParser = require("cookie-parser");
 const jwt = require("jsonwebtoken");
+const { v4: uuidv4 } = require("uuid");
 
 let neon = new neoncrm.Client(
   process.env.NEON_ORG_ID,
@@ -194,7 +195,7 @@ app.get(
   [
     check("user", "invalid user").trim().escape(),
     check("code", "invalid code").trim().escape(),
-    check("item").optional().trim().escape(),
+    check("item").trim().escape(),
   ],
   async (req, res) => {
     const errors = validationResult(req);
@@ -245,25 +246,22 @@ app.get("/signout", async (req, res) => {
   res.render("login");
 });
 
-app.get(
-  "/login",
-  [check("item").optional().trim().escape()],
-  async (req, res) => {
-    res.render("login", { item: req.query.item });
-  }
-);
+app.get("/login", [check("item").trim().escape()], async (req, res) => {
+  res.render("login", { item: req.query.item });
+});
 
 app.post(
   "/login",
   [
     check("email", "Missing or invalid email").isEmail(),
-    check("item").optional().trim().escape(),
+    check("item").trim().escape(),
   ],
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       var data = {
         errors: errors.array(),
+        item: req.body.item,
       };
       return res.render("login", data);
     }
@@ -282,10 +280,109 @@ app.post(
       });
 
     if (!users.length) {
-      res.render("login", {
+      return res.render("register", {
         email: req.body.email,
         item: req.body.item,
-        errors: [{ msg: "Email address not found" }],
+        errors: [
+          { msg: "Email address not found. Please register a new account." },
+        ],
+      });
+    }
+    let user = users[0];
+    sendMagicLink(
+      req.body["email"],
+      user.id,
+      user.get("Magic Code"),
+      req.body.item
+    );
+
+    res.render("link-sent");
+  }
+);
+
+app.get("/register", [check("item").trim().escape()], async (req, res) => {
+  res.render("register", { item: req.query.item });
+});
+
+app.post(
+  "/register",
+  [
+    check("name").trim(),
+    check("email", "Missing or invalid email").isEmail(),
+    check("phone", "Invalid phone number")
+      .isMobilePhone()
+      .optional({ nullable: true, checkFalsy: true }),
+    check("item").trim().escape(),
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      var data = {
+        errors: errors.array(),
+        name: req.body.name,
+        email: req.body.email,
+        phone: req.body.phone,
+        item: req.body.item,
+      };
+      return res.render("register", data);
+    }
+
+    // First check if this user already exists
+    let users = await base("Users")
+      .select({
+        filterByFormula: `{Email} = '${req.body.email}'`,
+      })
+      .all()
+      .catch((err) => {
+        console.error(err);
+        return res.render("error", {
+          context: "Error retrieving account.",
+          error: err.toString(),
+        });
+      });
+
+    // If an account already exists for this email, just send the magic code email
+    if (users.length > 0) {
+      console.log("found user!!!");
+      let user = users[0];
+      sendMagicLink(
+        req.body["email"],
+        user.id,
+        user.get("Magic Code"),
+        req.body.item
+      );
+
+      return res.render("link-sent");
+    }
+
+    // Create a new user
+    let magicCode = uuidv4();
+    users = await base("Users")
+      .create([
+        {
+          fields: {
+            Name: req.body.name,
+            Email: req.body.email,
+            Phone: req.body.phone,
+            "Magic Code": magicCode,
+          },
+        },
+      ])
+      .catch((err) => {
+        console.error(err);
+        return res.render("error", {
+          context: "Error creating account.",
+          error: err.toString(),
+        });
+      });
+
+    if (!users.length) {
+      res.render("register", {
+        name: req.body.name,
+        email: req.body.email,
+        phone: req.body.phone,
+        item: req.body.item,
+        errors: [{ msg: "Something went wrong, please try again." }],
       });
     }
     let user = users[0];
@@ -405,7 +502,7 @@ app.post(
     check("item", "Missing or invalid item ID").trim().escape(),
     check("event", "Missing or invalid event ID").trim().escape(),
     check("quantity", "Missing or invalid quantity").isInt(),
-    check("comment").optional().trim(),
+    check("comment").trim(),
   ],
   async (req, res) => {
     let userID = isLoggedIn(req, res);

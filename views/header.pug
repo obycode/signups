@@ -1,12 +1,14 @@
 .outer-header
-      .header
-        a.logo(href='https://empower4lifemd.org')
-          img(src="/assets/images/logo.png" alt="E4L Logo")
-        .header-right
-          a(href='/') Home
-          a(href='/user') My Signups
-          if loggedIn
-            a(href='/signout') Sign Out
-        .break
-        .title
-          h1 #{title}
+  .header
+    a.logo(href='https://empower4lifemd.org')
+      img(src="/assets/images/logo.png" alt="E4L Logo")
+    .header-right
+      a(href='/') Home
+      a(href='/user') My Signups
+      if loggedIn
+        a(href='/signout') Log Out
+      else
+        a(href='/login') Log In
+    .break
+    .title
+      h1 #{title}
