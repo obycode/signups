@@ -34,7 +34,7 @@ const base = Airtable.base(process.env.AIRTABLE_BASE);
 
 // Serve static files from public/ (ex. /images/foo.jpg)
 app.use(express.static("public"));
-
+app.use(express.json());
 app.use(
   bodyParser.urlencoded({
     extended: true,
@@ -181,7 +181,7 @@ app.get("/user", async (req, res) => {
   // Retrieve the user to get the signups
   let signups = await base("Signups")
     .select({
-      filterByFormula: `AND({Active}, {User ID} = '${userID}')`,
+      filterByFormula: `AND({Active}, {User ID} = '${userID}', {Number} > 0)`,
       view: "API",
     })
     .all()
@@ -587,8 +587,8 @@ app.post(
   }
 );
 
-app.post(
-  "/delete",
+app.delete(
+  "/signup",
   [check("signup", "Missing signup ID").trim().escape()],
   async (req, res) => {
     const errors = validationResult(req);
@@ -596,46 +596,34 @@ app.post(
       var data = {
         errors: errors.array(),
       };
-      return res.render("error", {
-        context: "Signup deletion attempted",
-        error: "Missing signup ID",
-      });
+      console.log("Signup deletion attempted: Missing signup ID");
+      return res.status(400).json(data);
     }
 
     let userID = isLoggedIn(req, res);
     if (!userID) {
-      return res.render("error", {
-        context: "Signup deletion attempted",
-        error: "user not logged in",
-      });
+      console.log("Signup deletion attempted: User not logged in");
+      return res.status(401).json({ error: "User not logged in" });
     }
 
     let signup = await base("Signups")
       .find(req.body.signup)
       .catch((err) => {
         console.log(`Error retrieving signup: ${err}`);
-        return res.render("error", {
-          context: "Error retrieving signup.",
-          error: err.toString(),
-        });
+        return res.status(400).json({ error: "Invalid signup ID" });
       });
 
-    if (signup.get("User ID") == userID) {
+    if (signup && signup.get("User ID") == userID) {
       await base("Signups")
-        .destroy([req.body.signup])
+        .update([{ id: req.body.signup, fields: { Number: 0 } }])
         .catch((err) => {
           console.log(`Error deleting signup: ${err}`);
-          return res.render("error", {
-            context: "Error deleting signup.",
-            error: err.toString(),
-          });
+          return res.status(500).json({ error: "Error deleting signup" });
         });
-      res.redirect("/user?success=1");
+      return res.status(200).json({ success: true });
     } else {
-      return res.render("error", {
-        context: "Error deleting signup.",
-        error: "Invalid user ID.",
-      });
+      console.log("Error deleting signup: Invalid user ID");
+      return res.status(401).json({ error: "Invalid user ID" });
     }
   }
 );

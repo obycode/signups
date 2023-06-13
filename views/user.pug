@@ -4,6 +4,7 @@ html
     meta(charset="utf-8")
     meta(name="viewport" content="width=device-width, initial-scale=1, user-scalable=no")
     link(rel="stylesheet" href="/assets/css/main.css")
+    script(charset="UTF-8" src="/assets/js/user.js")
   body(class="landing is-preload")
     - var title = 'My Signups';
     include header
@@ -12,6 +13,8 @@ html
         section(class="Main-content")
         if success
           h2 Signup canceled successfully.
+        else if error
+          h2 Error cancelling signup.
         each signup in signups
           .row
             .column
@@ -21,8 +24,6 @@ html
               p #{signup.notes}
             .column.box
               p #[strong Signed up for:] #{signup.count}
-              form(method="POST" action="/delete")
-                input(type='hidden' name='signup' value=signup.id)
-                button(type='submit' class="button-style") Cancel
+              button(type='submit' class="button-style" onclick=`cancelSignup('${signup.id}');`) Cancel
           hr
       include footer
