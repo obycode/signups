@@ -178,7 +178,7 @@ app.get("/user", async (req, res) => {
     return res.redirect("/login");
   }
 
-  // Retrieve the user to get the signups
+  // Retrieve the active signups
   let signups = await base("Signups")
     .select({
       filterByFormula: `AND({Active}, {User ID} = '${userID}', {Number} > 0)`,
@@ -193,8 +193,34 @@ app.get("/user", async (req, res) => {
       });
     });
 
+  // Retrieve the inactive signups
+  let inactive = await base("Signups")
+    .select({
+      filterByFormula: `AND({Active} = FALSE(), {User ID} = '${userID}', {Number} > 0)`,
+      view: "API",
+    })
+    .all()
+    .catch((err) => {
+      console.error(err);
+      return res.render("error", {
+        context: "Error retrieving signups.",
+        error: err.toString(),
+      });
+    });
+
   res.render("user", {
     signups: signups.map((signup) => {
+      return {
+        id: signup.id,
+        title: signup.get("Item Title"),
+        count: signup.get("Number"),
+        item: signup.get("Item")[0],
+        start: signup.get("Start"),
+        end: signup.get("End"),
+        notes: signup.get("Notes"),
+      };
+    }),
+    inactive: inactive.map((signup) => {
       return {
         id: signup.id,
         title: signup.get("Item Title"),

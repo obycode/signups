@@ -26,4 +26,15 @@ html
               p #[strong Signed up for:] #{signup.count}
               button(type='submit' class="button-style" onclick=`cancelSignup('${signup.id}');`) Cancel
           hr
+        h2 Previous Signups
+        each signup in inactive
+          .row
+            .column
+              h3 #{signup.title}
+              if signup.start
+                p #{signup.start} - #{signup.end}
+              p #{signup.notes}
+            .column.box
+              p #[strong Signed up for:] #{signup.count}
+          hr
       include footer
