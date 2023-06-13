@@ -21,7 +21,10 @@ html
                   h3 #{item.Title}
                   p #{item.Notes}
                 .column
-                  p #{item.Start} - #{item.End}
+                  if item.Start && item.End
+                    p #{item.Start} - #{item.End}
+                  else if item.End
+                    p Deadline: #{item.End}
                   if item.Have < item.Needed
                     span.slots #{item.Have} of #{item.Needed} Slots Filled
                     p 

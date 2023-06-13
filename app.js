@@ -445,7 +445,7 @@ app.post(
 async function renderEvent(userID, record, res) {
   let rawItems = await base("Items")
     .select({
-      filterByFormula: `{Event} = '${record.get("ID")}'`,
+      filterByFormula: `{Event ID} = '${record.get("ID")}'`,
     })
     .all()
     .catch((err) => {
@@ -457,12 +457,14 @@ async function renderEvent(userID, record, res) {
     });
 
   let items = rawItems.map((item) => {
+    let start = typeof item.get("Start") === "object" ? null : item.get("Start");
+    let end = typeof item.get("End") === "object" ? null : item.get("End");
     return {
       ID: item.id,
       Title: item.get("Title"),
       Notes: item.get("Notes"),
-      Start: item.get("Start"),
-      End: item.get("End"),
+      Start: start,
+      End: end,
       Needed: item.get("Needed"),
       Have: item.get("Have"),
     };
