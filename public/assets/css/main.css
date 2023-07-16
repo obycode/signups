@@ -283,6 +283,7 @@ h2 {
   letter-spacing: 0em;
   line-height: 1.2em;
   text-transform: none;
+  margin: 0;
 }
 
 @media screen and (max-width: 767px) {
@@ -705,6 +706,18 @@ footer p {
 .column-2 {
   flex: 2;
   padding: 16px;
+}
+
+.column p {
+  margin: 0;
+}
+
+p.button-p {
+  margin: 24;
+}
+
+.item li {
+  text-align: left;
 }
 
 .row img {

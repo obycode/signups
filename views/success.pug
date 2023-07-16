@@ -11,11 +11,16 @@ html
       main
         section(class="Main-content")
           p Sign up successful! We've sent the details to your email.
-          h3 #{item.Title}
-          p #{item.Start} - #{item.End}
-          p #{item.Notes}
+          if item.title
+            h3 #{item.title}
+          if start && end
+            p #{start} - #{end}
+          else if end
+            p Deadline: #{end}
+          p!= item.Notes
           p Signed up for: #{count}
-          p Comment: #{comment}
+          if comment
+            p Comment: #{comment}
           p
             a(href=`/event/${event}` class='button-style button-style1') Sign up for another
       include footer

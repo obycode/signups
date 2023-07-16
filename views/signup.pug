@@ -10,15 +10,22 @@ html
     .outer-main
       main
         section(class="Main-content")
-          h3 #{item.Title}
-          p #{item.Start} - #{item.End}
-          p #{item.Notes}
+          if item.title
+            h3 #{item.title}
+          if item.start && item.end
+            p #{item.start} - #{item.end}
+          else if item.end
+            p Deadline: #{item.end}
+          p!= item.notes
           form.signup(method="POST" action="/signup")
             .form-group 
               label(for='comment') Comment: 
-              textarea#comment(name="comment" cols="30" rows="4") 
-              label(for="quantity") Quantity:
-              input#quantity.form-control(type='number' name='quantity' value=1)
+              textarea#comment(name="comment" cols="30" rows="4")
+              if item.needed > 1
+                label(for="quantity") Quantity:
+                input#quantity.form-control(type='number' name='quantity' value=1)
+              else
+                input#quantity(type='hidden' name='quantity' value=1)
               input#item(type='hidden' name='item' value=itemID)
               input#item(type='hidden' name='event' value=eventID)
               .center

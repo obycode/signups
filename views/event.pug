@@ -18,21 +18,24 @@ html
             for item in items
               .row
                 .column
-                  h3 #{item.Title}
-                  p #{item.Notes}
+                  if item.Title
+                    h2 #{item.Title}
+                  .item
+                    p!= item.Notes
                 .column
                   if item.Start && item.End
                     p #{item.Start} - #{item.End}
                   else if item.End
                     p Deadline: #{item.End}
                   if item.Have < item.Needed
-                    span.slots #{item.Have} of #{item.Needed} Slots Filled
-                    p 
+                    p
+                      span.slots #{item.Have} of #{item.Needed}
+                    p.button-p 
                       if loggedIn
                         a(href="/signup?item=" + item.ID class="button-style button-style2") Sign Up
                       else 
                         a(href="/login?item=" + item.ID class="button-style button-style2") Sign Up
                   else
-                    span.slots All Slots Filled
+                    span.slots Needs Met!
               hr
       include footer

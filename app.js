@@ -210,24 +210,58 @@ app.get("/user", async (req, res) => {
 
   res.render("user", {
     signups: signups.map((signup) => {
+      let start =
+        typeof signup.get("Start")[0] === "object"
+          ? null
+          : signup.get("Start")[0];
+      let end;
+      if (start) {
+        end =
+          typeof signup.get("End")[0] === "object"
+            ? null
+            : signup.get("End")[0];
+      } else {
+        end =
+          typeof signup.get("Deadline")[0] === "object"
+            ? null
+            : signup.get("Deadline")[0];
+      }
+
       return {
         id: signup.id,
         title: signup.get("Item Title"),
         count: signup.get("Number"),
         item: signup.get("Item")[0],
-        start: signup.get("Start"),
-        end: signup.get("End"),
+        start,
+        end,
         notes: signup.get("Notes"),
       };
     }),
     inactive: inactive.map((signup) => {
+      let start =
+        typeof signup.get("Start")[0] === "object"
+          ? null
+          : signup.get("Start")[0];
+      let end;
+      if (start) {
+        end =
+          typeof signup.get("End")[0] === "object"
+            ? null
+            : signup.get("End")[0];
+      } else {
+        end =
+          typeof signup.get("Deadline")[0] === "object"
+            ? null
+            : signup.get("Deadline")[0];
+      }
+
       return {
         id: signup.id,
         title: signup.get("Item Title"),
         count: signup.get("Number"),
         item: signup.get("Item")[0],
-        start: signup.get("Start"),
-        end: signup.get("End"),
+        start,
+        end,
         notes: signup.get("Notes"),
       };
     }),
@@ -248,7 +282,7 @@ app.get(
     if (!errors.isEmpty()) {
       var data = {
         errors: errors.array(),
-        item: req.body.item,
+        item: req.query.item,
       };
       return res.render("login", data);
     }
@@ -279,8 +313,8 @@ app.get(
       });
     }
 
-    if (req.body.item) {
-      res.redirect(`/signup?item=${req.body.item}`);
+    if (req.query.item) {
+      res.redirect(`/signup?item=${req.query.item}`);
     } else {
       res.redirect("/user");
     }
@@ -446,6 +480,7 @@ async function renderEvent(userID, record, res) {
   let rawItems = await base("Items")
     .select({
       filterByFormula: `{Event ID} = '${record.get("ID")}'`,
+      sort: [{ field: "Remaining", direction: "desc" }],
     })
     .all()
     .catch((err) => {
@@ -457,8 +492,15 @@ async function renderEvent(userID, record, res) {
     });
 
   let items = rawItems.map((item) => {
-    let start = typeof item.get("Start") === "object" ? null : item.get("Start");
-    let end = typeof item.get("End") === "object" ? null : item.get("End");
+    let start =
+      typeof item.get("Start") === "object" ? null : item.get("Start");
+    let end;
+    if (start) {
+      end = typeof item.get("End") === "object" ? null : item.get("End");
+    } else {
+      end =
+        typeof item.get("Deadline") === "object" ? null : item.get("Deadline");
+    }
     return {
       ID: item.id,
       Title: item.get("Title"),
@@ -534,11 +576,27 @@ app.get(
         });
       });
 
+    let start =
+      typeof item.get("Start") === "object" ? null : item.get("Start");
+    let end;
+    if (start) {
+      end = typeof item.get("End") === "object" ? null : item.get("End");
+    } else {
+      end =
+        typeof item.get("Deadline") === "object" ? null : item.get("Deadline");
+    }
+
     return res.render("signup", {
       loggedIn: userID,
       itemID: req.query.item,
       eventID: item.get("Event")[0],
-      item: item.fields,
+      item: {
+        title: item.get("Title"),
+        start,
+        end,
+        notes: item.get("Notes"),
+        needed: item.get("Needed"),
+      },
     });
   }
 );
@@ -603,7 +661,29 @@ app.post(
         });
       });
 
-    sendConfirmation(user.get("Email"), item.fields, count, comment);
+    let start =
+      typeof item.get("Start") === "object" ? null : item.get("Start");
+    let end;
+    if (start) {
+      end = typeof item.get("End") === "object" ? null : item.get("End");
+    } else {
+      end =
+        typeof item.get("Deadline") === "object" ? null : item.get("Deadline");
+    }
+
+    sendConfirmation(
+      user.get("Email"),
+      {
+        event: item.get("Event Title"),
+        eventDescription: item.get("Event Description"),
+        title: item.get("Title"),
+        start,
+        end,
+        notes: item.get("Notes"),
+      },
+      count,
+      comment
+    );
 
     return res.render("success", {
       loggedIn: userID,

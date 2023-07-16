@@ -18,10 +18,13 @@ html
         each signup in signups
           .row
             .column
-              h3 #{signup.title}
-              if signup.start
+              if signup.title
+                h3 #{signup.title}
+              if signup.start && signup.end
                 p #{signup.start} - #{signup.end}
-              p #{signup.notes}
+              else if signup.end
+                p Deadline: #{signup.end}
+              p !{signup.notes}
             .column.box
               p #[strong Signed up for:] #{signup.count}
               button(type='submit' class="button-style" onclick=`cancelSignup('${signup.id}');`) Cancel
@@ -33,7 +36,7 @@ html
               h3 #{signup.title}
               if signup.start
                 p #{signup.start} - #{signup.end}
-              p #{signup.notes}
+              p !{signup.notes}
             .column.box
               p #[strong Signed up for:] #{signup.count}
           hr
