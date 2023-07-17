@@ -39,7 +39,7 @@ async function fetchChildren() {
 }
 
 async function addChildrenToEvent(children) {
-  signupBase("Items")
+  await signupBase("Items")
     .create(
       children.map((child) => {
         let notes = `<ul><li><b>Age:</b> ${child.age}</li><li><b>Gender:</b> ${child.gender}</li><li><b>Shirt Size:</b> ${child.shirtSize}</li><li><b>Pant Size:</b> ${child.pantSize}</li><li><b>Favorite Color:</b> ${child.color}</li>`;
@@ -68,13 +68,32 @@ async function addChildrenToEvent(children) {
     });
 }
 
+async function markChildrenAsAdded(children) {
+  await sourceBase("Children")
+    .update(
+      children.map((child) => {
+        return {
+          id: child.airtable_id,
+          fields: {
+            Added: true,
+          },
+        };
+      })
+    )
+    .catch((err) => {
+      console.error("error updating children", err);
+    });
+}
+
 async function main() {
   let children = await fetchChildren();
+  console.log(`Found ${children.length} children to add`);
 
   // Process children in batches of 10
   for (let i = 0; i < children.length; i += 10) {
     let batch = children.slice(i, i + 10);
     await addChildrenToEvent(batch);
+    await markChildrenAsAdded(batch);
   }
 }
 
