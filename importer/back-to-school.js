@@ -57,7 +57,7 @@ async function addChildrenToEvent(children) {
           fields: {
             Notes: notes,
             Event: [signupEvent],
-            "End Time": "2023-08-19T20:00:00.000-04:00",
+            "End Time": "2023-08-13T12:00:00.000-04:00",
             Needed: 1,
           },
         };
