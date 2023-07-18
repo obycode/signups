@@ -134,6 +134,52 @@ async function sendConfirmation(email, item, count, comment) {
   }
 }
 
+/// Send an email to Ashley letting her know that a signup has been cancelled.
+async function sendCancellation(signup) {
+  const email = "ashley@empower4lifemd.org";
+  const itemsLink =
+    "https://airtable.com/app087A4CurWjxse2/tblYCbwlZ5GwBZSVq/viwIqmIZu9HCnK28P?blocks=hide";
+
+  let emailBody = pug.renderFile("views/e4l-mail.pug", {
+    title: "Empower4Life Signups Cancellation",
+    preheader: "Signup cancelled",
+    header: {
+      src: "https://images.squarespace-cdn.com/content/v1/5e0f48b1f2de9e7798c9150b/1581484830548-NDTK6YHUVSJILPCCMDPB/FINAL-_2_.png?format=750w",
+      alt: "Empower4Life Logo",
+    },
+    bodyTop: pug.renderFile("views/cancellation.pug", {
+      user: signup.get("User Name"),
+      event: signup.get("Event Title"),
+      item: signup.get("Item Title"),
+    }),
+    button: {
+      url: itemsLink,
+      text: "Go to Signups Table",
+    },
+  });
+  emailBody = await inlineCss(emailBody, {
+    url: `file://${process.cwd()}/public/`,
+    preserveMediaQueries: true,
+  });
+  const msg = {
+    to: email,
+    from: "Empower4Life <jennifer@empower4lifemd.org>",
+    subject: "Signup Cancellation",
+    text: pug.renderFile("views/cancellation-text.pug", {
+      user: signup.get("User Name"),
+      event: signup.get("Event Title"),
+      item: signup.get("Item Title"),
+      link: itemsLink,
+    }),
+    html: emailBody,
+  };
+  try {
+    sgMail.send(msg);
+  } catch (e) {
+    console.log("Error sending mail:", e);
+  }
+}
+
 app.get("/", async (req, res) => {
   let userID = isLoggedIn(req, res);
   var events = [];
@@ -728,6 +774,8 @@ app.delete(
           console.log(`Error deleting signup: ${err}`);
           return res.status(500).json({ error: "Error deleting signup" });
         });
+
+      sendCancellation(signup);
       return res.status(200).json({ success: true });
     } else {
       console.log("Error deleting signup: Invalid user ID");
