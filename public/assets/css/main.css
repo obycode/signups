@@ -730,6 +730,7 @@ p.button-p {
 
 .event img {
   max-height: 50vh;
+  max-width: 100%;
   border: solid #555;
   padding: 8px;
 }
@@ -744,10 +745,21 @@ p.button-p {
     padding-left: 32px;
     text-align: left;
   }
+
   .header-right {
-    display: none;
+    padding-bottom: 8px;
   }
+
   main p {
     margin-inline: 0;
+  }
+
+  .row {
+    flex-direction: column;
+  }
+
+  .column {
+    width: 100%;
+    padding: 4px;
   }
 }
