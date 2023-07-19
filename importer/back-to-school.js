@@ -8,7 +8,7 @@ Airtable.configure({
 });
 const signupBase = Airtable.base(process.env.AIRTABLE_BASE);
 
-const sourceBase = Airtable.base("appfxnY8QLAaZfgCI");
+const sourceBase = Airtable.base("appq5qYIbFYbqvqYv");
 const signupEvent = "recZnInmgAzcelnht";
 
 async function fetchChildren() {
