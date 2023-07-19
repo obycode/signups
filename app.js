@@ -722,6 +722,8 @@ app.post(
       {
         event: item.get("Event Title"),
         eventDescription: item.get("Event Description"),
+        emailInfo: item.get("Email Info"),
+        eventEmailInfo: item.get("Event Email Info"),
         title: item.get("Title"),
         start,
         end,
