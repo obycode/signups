@@ -526,7 +526,7 @@ async function renderEvent(userID, record, res) {
   let rawItems = await base("Items")
     .select({
       filterByFormula: `{Event ID} = '${record.get("ID")}'`,
-      sort: [{ field: "Remaining", direction: "desc" }],
+      sort: [{ field: "Filled", direction: "asc" }],
     })
     .all()
     .catch((err) => {
