@@ -4,6 +4,13 @@ html
     meta(charset="utf-8")
     meta(name="viewport" content="width=device-width, initial-scale=1, user-scalable=no")
     link(rel="stylesheet" href="/assets/css/main.css")
+    script.
+      function submitForm(button) {
+        // Disable the button
+        button.disabled = true;
+        // Submit the form
+        button.form.submit();
+      }
   body(class="landing is-preload")
     - var title = "Sign Me Up";
     include header
@@ -29,5 +36,5 @@ html
               input#item(type='hidden' name='item' value=itemID)
               input#item(type='hidden' name='event' value=eventID)
               .center
-                button(type='submit' class='button-style button-style2') Sign Up
+                button(type='submit' class='button-style button-style2' onclick='submitForm(this)') Sign Up
       include footer
