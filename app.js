@@ -257,18 +257,18 @@ app.get("/user", async (req, res) => {
   res.render("user", {
     signups: signups.map((signup) => {
       let start =
-        typeof signup.get("Start")[0] === "object"
+        typeof signup.get("Start") === "object"
           ? null
           : signup.get("Start")[0];
       let end;
       if (start) {
         end =
-          typeof signup.get("End")[0] === "object"
+          typeof signup.get("End") === "object"
             ? null
             : signup.get("End")[0];
       } else {
         end =
-          typeof signup.get("Deadline")[0] === "object"
+          typeof signup.get("Deadline") === "object"
             ? null
             : signup.get("Deadline")[0];
       }
@@ -285,18 +285,18 @@ app.get("/user", async (req, res) => {
     }),
     inactive: inactive.map((signup) => {
       let start =
-        typeof signup.get("Start")[0] === "object"
+        typeof signup.get("Start") === "object"
           ? null
           : signup.get("Start")[0];
       let end;
       if (start) {
         end =
-          typeof signup.get("End")[0] === "object"
+          typeof signup.get("End") === "object"
             ? null
             : signup.get("End")[0];
       } else {
         end =
-          typeof signup.get("Deadline")[0] === "object"
+          typeof signup.get("Deadline") === "object"
             ? null
             : signup.get("Deadline")[0];
       }
