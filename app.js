@@ -256,56 +256,62 @@ app.get("/user", async (req, res) => {
 
   res.render("user", {
     signups: signups.map((signup) => {
+      let startValue = signup.get("Start");
       let start =
-        typeof signup.get("Start") === "object"
-          ? null
-          : signup.get("Start")[0];
+        Array.isArray(startValue) && startValue.length > 0
+          ? startValue[0]
+          : null;
       let end;
       if (start) {
+        let endValue = signup.get("End");
         end =
-          typeof signup.get("End") === "object"
-            ? null
-            : signup.get("End")[0];
+          Array.isArray(endValue) && endValue.length > 0 ? endValue[0] : null;
       } else {
+        let endValue = signup.get("Deadline");
         end =
-          typeof signup.get("Deadline") === "object"
-            ? null
-            : signup.get("Deadline")[0];
+          Array.isArray(endValue) && endValue.length > 0 ? endValue[0] : null;
       }
+
+      let itemValue = signup.get("Item");
+      let item =
+        Array.isArray(itemValue) && itemValue.length > 0 ? itemValue[0] : null;
 
       return {
         id: signup.id,
         title: signup.get("Item Title"),
         count: signup.get("Number"),
-        item: signup.get("Item")[0],
+        item,
         start,
         end,
         notes: signup.get("Notes"),
       };
     }),
     inactive: inactive.map((signup) => {
+      let startValue = signup.get("Start");
       let start =
-        typeof signup.get("Start") === "object"
-          ? null
-          : signup.get("Start")[0];
+        Array.isArray(startValue) && startValue.length > 0
+          ? startValue[0]
+          : null;
       let end;
       if (start) {
+        let endValue = signup.get("End");
         end =
-          typeof signup.get("End") === "object"
-            ? null
-            : signup.get("End")[0];
+          Array.isArray(endValue) && endValue.length > 0 ? endValue[0] : null;
       } else {
+        let endValue = signup.get("Deadline");
         end =
-          typeof signup.get("Deadline") === "object"
-            ? null
-            : signup.get("Deadline")[0];
+          Array.isArray(endValue) && endValue.length > 0 ? endValue[0] : null;
       }
+
+      let itemValue = signup.get("Item");
+      let item =
+        Array.isArray(itemValue) && itemValue.length > 0 ? itemValue[0] : null;
 
       return {
         id: signup.id,
         title: signup.get("Item Title"),
         count: signup.get("Number"),
-        item: signup.get("Item")[0],
+        item,
         start,
         end,
         notes: signup.get("Notes"),
@@ -538,14 +544,16 @@ async function renderEvent(userID, record, res) {
     });
 
   let items = rawItems.map((item) => {
+    let startValue = signup.get("Start");
     let start =
-      typeof item.get("Start") === "object" ? null : item.get("Start");
+      Array.isArray(startValue) && startValue.length > 0 ? startValue[0] : null;
     let end;
     if (start) {
-      end = typeof item.get("End") === "object" ? null : item.get("End");
+      let endValue = signup.get("End");
+      end = Array.isArray(endValue) && endValue.length > 0 ? endValue[0] : null;
     } else {
-      end =
-        typeof item.get("Deadline") === "object" ? null : item.get("Deadline");
+      let endValue = signup.get("Deadline");
+      end = Array.isArray(endValue) && endValue.length > 0 ? endValue[0] : null;
     }
     return {
       ID: item.id,
@@ -557,6 +565,7 @@ async function renderEvent(userID, record, res) {
       Have: item.get("Have"),
     };
   });
+
   return res.render("event", {
     loggedIn: userID,
     event: {
@@ -622,14 +631,16 @@ app.get(
         });
       });
 
+    let startValue = signup.get("Start");
     let start =
-      typeof item.get("Start") === "object" ? null : item.get("Start");
+      Array.isArray(startValue) && startValue.length > 0 ? startValue[0] : null;
     let end;
     if (start) {
-      end = typeof item.get("End") === "object" ? null : item.get("End");
+      let endValue = signup.get("End");
+      end = Array.isArray(endValue) && endValue.length > 0 ? endValue[0] : null;
     } else {
-      end =
-        typeof item.get("Deadline") === "object" ? null : item.get("Deadline");
+      let endValue = signup.get("Deadline");
+      end = Array.isArray(endValue) && endValue.length > 0 ? endValue[0] : null;
     }
 
     return res.render("signup", {
@@ -707,14 +718,16 @@ app.post(
         });
       });
 
+    let startValue = signup.get("Start");
     let start =
-      typeof item.get("Start") === "object" ? null : item.get("Start");
+      Array.isArray(startValue) && startValue.length > 0 ? startValue[0] : null;
     let end;
     if (start) {
-      end = typeof item.get("End") === "object" ? null : item.get("End");
+      let endValue = signup.get("End");
+      end = Array.isArray(endValue) && endValue.length > 0 ? endValue[0] : null;
     } else {
-      end =
-        typeof item.get("Deadline") === "object" ? null : item.get("Deadline");
+      let endValue = signup.get("Deadline");
+      end = Array.isArray(endValue) && endValue.length > 0 ? endValue[0] : null;
     }
 
     sendConfirmation(
