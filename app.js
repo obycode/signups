@@ -631,15 +631,15 @@ app.get(
         });
       });
 
-    let startValue = signup.get("Start");
+    let startValue = item.get("Start");
     let start =
       Array.isArray(startValue) && startValue.length > 0 ? startValue[0] : null;
     let end;
     if (start) {
-      let endValue = signup.get("End");
+      let endValue = item.get("End");
       end = Array.isArray(endValue) && endValue.length > 0 ? endValue[0] : null;
     } else {
-      let endValue = signup.get("Deadline");
+      let endValue = item.get("Deadline");
       end = Array.isArray(endValue) && endValue.length > 0 ? endValue[0] : null;
     }
 
@@ -718,15 +718,15 @@ app.post(
         });
       });
 
-    let startValue = signup.get("Start");
+    let startValue = item.get("Start");
     let start =
       Array.isArray(startValue) && startValue.length > 0 ? startValue[0] : null;
     let end;
     if (start) {
-      let endValue = signup.get("End");
+      let endValue = item.get("End");
       end = Array.isArray(endValue) && endValue.length > 0 ? endValue[0] : null;
     } else {
-      let endValue = signup.get("Deadline");
+      let endValue = item.get("Deadline");
       end = Array.isArray(endValue) && endValue.length > 0 ? endValue[0] : null;
     }
 
