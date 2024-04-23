@@ -544,16 +544,12 @@ async function renderEvent(userID, record, res) {
     });
 
   let items = rawItems.map((item) => {
-    let startValue = item.get("Start");
-    let start =
-      Array.isArray(startValue) && startValue.length > 0 ? startValue[0] : null;
+    let start = item.get("Start");
     let end;
     if (start) {
-      let endValue = item.get("End");
-      end = Array.isArray(endValue) && endValue.length > 0 ? endValue[0] : null;
+      end = item.get("End");
     } else {
-      let endValue = item.get("Deadline");
-      end = Array.isArray(endValue) && endValue.length > 0 ? endValue[0] : null;
+      end = item.get("Deadline");
     }
     return {
       ID: item.id,
@@ -631,16 +627,12 @@ app.get(
         });
       });
 
-    let startValue = item.get("Start");
-    let start =
-      Array.isArray(startValue) && startValue.length > 0 ? startValue[0] : null;
+    let start = item.get("Start");
     let end;
     if (start) {
-      let endValue = item.get("End");
-      end = Array.isArray(endValue) && endValue.length > 0 ? endValue[0] : null;
+      end = item.get("End");
     } else {
-      let endValue = item.get("Deadline");
-      end = Array.isArray(endValue) && endValue.length > 0 ? endValue[0] : null;
+      end = item.get("Deadline");
     }
 
     return res.render("signup", {
@@ -718,16 +710,12 @@ app.post(
         });
       });
 
-    let startValue = item.get("Start");
-    let start =
-      Array.isArray(startValue) && startValue.length > 0 ? startValue[0] : null;
+    let start = item.get("Start");
     let end;
     if (start) {
-      let endValue = item.get("End");
-      end = Array.isArray(endValue) && endValue.length > 0 ? endValue[0] : null;
+      end = item.get("End");
     } else {
-      let endValue = item.get("Deadline");
-      end = Array.isArray(endValue) && endValue.length > 0 ? endValue[0] : null;
+      end = item.get("Deadline");
     }
 
     sendConfirmation(
