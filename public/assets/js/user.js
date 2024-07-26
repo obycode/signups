@@ -1,9 +1,6 @@
 async function cancelSignup(id) {
   if (confirm("Are you sure you want to cancel?")) {
     // Cancel the signup
-    console.log("ID:", id);
-    console.log(JSON.stringify({ signup: id }));
-
     const response = await fetch("/signup", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },

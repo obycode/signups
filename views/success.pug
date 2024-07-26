@@ -13,11 +13,11 @@ html
           p Sign up successful! We've sent the details to your email.
           if item.title
             h3 #{item.title}
-          if start && end
-            p #{start} - #{end}
-          else if end
-            p Deadline: #{end}
-          p!= item.Notes
+          if item.start_time && item.end_time
+            p #{item.start_time} - #{item.end_time}
+          else if item.end_time
+            p Deadline: #{item.end_time}
+          p!= item.notes
           p Signed up for: #{count}
           if comment
             p Comment: #{comment}

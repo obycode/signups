@@ -37,6 +37,7 @@ async function ensureItemsTable(client) {
         event_id INTEGER,
         title TEXT,
         notes TEXT,
+        email_info TEXT,
         start_time TIMESTAMP,
         end_time TIMESTAMP,
         needed INTEGER
@@ -134,26 +135,38 @@ async function createEvent(event) {
 }
 
 async function getEvent(event_id) {
-  const result = await pool.query(
-    `
-    SELECT * FROM events
-    WHERE id = $1
-  `,
-    [event_id]
-  );
+  try {
+    const result = await pool.query(
+      `
+        SELECT * FROM events
+        WHERE id = $1
+      `,
+      [event_id]
+    );
 
-  if (result.rows.length === 0) {
+    if (result.rows.length === 0) {
+      return null;
+    }
+    return result.rows[0];
+  } catch (err) {
+    console.error(err);
     return null;
   }
-  return result.rows[0];
 }
 
 async function getActiveEvents() {
-  const result = await pool.query(`
-    SELECT * FROM events
-    WHERE active = true
-  `);
-  return result.rows;
+  try {
+    const result = await pool.query(
+      `
+        SELECT * FROM events
+        WHERE active = true
+      `
+    );
+    return result.rows;
+  } catch (err) {
+    console.error(err);
+    return [];
+  }
 }
 
 // ITEMS
@@ -178,34 +191,44 @@ async function createItem(item) {
 }
 
 async function getItem(item_id) {
-  const result = await pool.query(
-    `
-    SELECT * FROM items
-    WHERE id = $1
-  `,
-    [item_id]
-  );
+  try {
+    const result = await pool.query(
+      `
+        SELECT * FROM items
+        WHERE id = $1
+      `,
+      [item_id]
+    );
 
-  if (result.rows.length === 0) {
+    if (result.rows.length === 0) {
+      return null;
+    }
+    return result.rows[0];
+  } catch (err) {
+    console.error(err);
     return null;
   }
-  return result.rows[0];
 }
 
 async function getItemsForEvent(event_id) {
-  // Join with signups to get the number of signups for each item
-  const result = await pool.query(
-    `
-    SELECT items.*, COUNT(signups.id) AS signups
-    FROM items
-    LEFT JOIN signups ON items.id = signups.item_id
-    WHERE event_id = $1
-    GROUP BY items.id
-    ORDER BY signups ASC
-  `,
-    [event_id]
-  );
-  return result.rows;
+  try {
+    // Join with signups to get the number of signups for each item
+    const result = await pool.query(
+      `
+        SELECT items.*, COUNT(signups.id) AS signups
+        FROM items
+        LEFT JOIN signups ON items.id = signups.item_id
+        WHERE event_id = $1
+        GROUP BY items.id
+        ORDER BY signups ASC
+      `,
+      [event_id]
+    );
+    return result.rows;
+  } catch (err) {
+    console.error(err);
+    return [];
+  }
 }
 
 // USERS
@@ -213,51 +236,66 @@ async function getItemsForEvent(event_id) {
 async function createUser(user) {
   const result = await pool.query(
     `
-    INSERT INTO users (name, email, phone, magic_code)
-    VALUES ($1, $2, $3, $4)
-    RETURNING id
-  `,
+      INSERT INTO users (name, email, phone, magic_code)
+      VALUES ($1, $2, $3, $4)
+      RETURNING id
+    `,
     [user.name, user.email, user.phone, user.magic_code]
   );
   return result.rows[0].id;
 }
 
 async function getUser(user_id) {
-  const result = await pool.query(
-    `
-    SELECT * FROM users
-    WHERE id = $1
-  `,
-    [user_id]
-  );
-  return result.rows[0];
+  try {
+    const result = await pool.query(
+      `
+        SELECT * FROM users
+        WHERE id = $1
+      `,
+      [user_id]
+    );
+    return result.rows[0];
+  } catch (err) {
+    console.error(err);
+    return null;
+  }
 }
 
 async function getUserByEmail(email) {
-  const result = await pool.query(
-    `
-    SELECT * FROM users
-    WHERE email = $1
-  `,
-    [email]
-  );
+  try {
+    const result = await pool.query(
+      `
+        SELECT * FROM users
+        WHERE email = $1
+      `,
+      [email]
+    );
 
-  if (result.rows.length === 0) {
+    if (result.rows.length === 0) {
+      return null;
+    }
+
+    return result.rows[0];
+  } catch (err) {
+    console.error(err);
     return null;
   }
-
-  return result.rows[0];
 }
 
 async function getMagicCodeForUser(user_id) {
-  const result = await pool.query(
-    `
-    SELECT magic_code FROM users
-    WHERE id = $1
-  `,
-    [user_id]
-  );
-  return result.rows[0].magic_code;
+  try {
+    const result = await pool.query(
+      `
+        SELECT magic_code FROM users
+        WHERE id = $1
+      `,
+      [user_id]
+    );
+    return result.rows[0].magic_code;
+  } catch (err) {
+    console.error(err);
+    return null;
+  }
 }
 
 // SIGNUPS
@@ -275,29 +313,79 @@ async function createSignup(signup) {
 }
 
 async function getActiveSignupsForUser(user_id) {
-  const result = await pool.query(
-    `
-    SELECT * FROM signups
-    JOIN items ON signups.item_id = items.id
-    JOIN events ON items.event_id = events.id
-    WHERE user_id = $1 AND events.active = true
-  `,
-    [user_id]
-  );
-  return result.rows;
+  try {
+    const result = await pool.query(
+      `
+        SELECT signups.id, signups.user_id, items.event_id,
+          items.title AS item_title, items.start_time,
+          items.end_time, signups.quantity, items.notes
+        FROM signups
+        JOIN items ON signups.item_id = items.id
+        JOIN events ON items.event_id = events.id
+        WHERE user_id = $1 AND events.active = true
+      `,
+      [user_id]
+    );
+    return result.rows;
+  } catch (err) {
+    console.error(err);
+    return [];
+  }
 }
 
 async function getInactiveSignupsForUser(user_id) {
-  const result = await pool.query(
-    `
-    SELECT * FROM signups
-    JOIN items ON signups.item_id = items.id
-    JOIN events ON items.event_id = events.id
-    WHERE user_id = $1 AND events.active = false
-  `,
-    [user_id]
-  );
-  return result.rows;
+  try {
+    const result = await pool.query(
+      `
+        SELECT signups.id, signups.user_id, items.event_id,
+          items.title AS item_title, items.start_time,
+          items.end_time, signups.quantity, items.notes
+        FROM signups
+        JOIN items ON signups.item_id = items.id
+        JOIN events ON items.event_id = events.id
+        WHERE user_id = $1 AND events.active = false
+      `,
+      [user_id]
+    );
+    return result.rows;
+  } catch (err) {
+    console.error(err);
+    return [];
+  }
+}
+
+async function getSignup(signup_id) {
+  try {
+    const result = await pool.query(
+      `
+        SELECT * FROM signups
+        WHERE id = $1
+      `,
+      [signup_id]
+    );
+
+    if (result.rows.length === 0) {
+      return null;
+    }
+    return result.rows[0];
+  } catch (err) {
+    console.error(err);
+    return null;
+  }
+}
+
+async function deleteSignup(signup_id) {
+  try {
+    await pool.query(
+      `
+        DELETE FROM signups
+        WHERE id = $1
+      `,
+      [signup_id]
+    );
+  } catch (err) {
+    console.error(err);
+  }
 }
 
 module.exports = {
@@ -315,4 +403,6 @@ module.exports = {
   createSignup,
   getActiveSignupsForUser,
   getInactiveSignupsForUser,
+  getSignup,
+  deleteSignup,
 };

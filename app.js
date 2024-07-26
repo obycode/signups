@@ -21,6 +21,9 @@ const {
   getItemsForEvent,
   getEvent,
   getItem,
+  createSignup,
+  getSignup,
+  deleteSignup,
 } = require("./db");
 
 let neon = new neoncrm.Client(
@@ -36,13 +39,6 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 app.set("view engine", "pug");
 
 app.use(cookieParser(process.env.COOKIE_SECRET));
-
-const Airtable = require("airtable");
-
-Airtable.configure({
-  apiKey: process.env.AIRTABLE_API_KEY,
-});
-const base = Airtable.base(process.env.AIRTABLE_BASE);
 
 // Serve static files from public/ (ex. /images/foo.jpg)
 app.use(express.static("public"));
@@ -153,8 +149,11 @@ async function sendConfirmation(email, item, count, comment) {
 /// Send an email to Ashley letting her know that a signup has been cancelled.
 async function sendCancellation(signup) {
   const email = "ashley@empower4lifemd.org";
-  const itemsLink =
-    "https://airtable.com/app087A4CurWjxse2/tblYCbwlZ5GwBZSVq/viwIqmIZu9HCnK28P?blocks=hide";
+  const item = await getItem(signup.item_id);
+  const event = await getEvent(item.event_id);
+  const user = await getUser(signup.user_id);
+
+  const itemsLink = "https://signups.empower4lifemd.org/event/" + event.id;
 
   let emailBody = pug.renderFile("views/e4l-mail.pug", {
     title: "Empower4Life Signups Cancellation",
@@ -164,13 +163,13 @@ async function sendCancellation(signup) {
       alt: "Empower4Life Logo",
     },
     bodyTop: pug.renderFile("views/cancellation.pug", {
-      user: signup.get("User Name"),
-      event: signup.get("Event Title"),
-      item: signup.get("Item Title"),
+      user: user.name,
+      event: event.title,
+      item: item.title,
     }),
     button: {
       url: itemsLink,
-      text: "Go to Signups Table",
+      text: "Go to Signups Event",
     },
   });
   emailBody = await inlineCss(emailBody, {
@@ -182,9 +181,9 @@ async function sendCancellation(signup) {
     from: "Empower4Life <jennifer@empower4lifemd.org>",
     subject: "Signup Cancellation",
     text: pug.renderFile("views/cancellation-text.pug", {
-      user: signup.get("User Name"),
-      event: signup.get("Event Title"),
-      item: signup.get("Item Title"),
+      user: user.name,
+      event: event.title,
+      item: item.title,
       link: itemsLink,
     }),
     html: emailBody,
@@ -233,68 +232,30 @@ app.get("/user", async (req, res) => {
   let inactive = await getInactiveSignupsForUser(userID);
 
   res.render("user", {
-    signups: signups.map((signup) => {
-      let startValue = signup.get("Start");
-      let start =
-        Array.isArray(startValue) && startValue.length > 0
-          ? startValue[0]
-          : null;
-      let end;
-      if (start) {
-        let endValue = signup.get("End");
-        end =
-          Array.isArray(endValue) && endValue.length > 0 ? endValue[0] : null;
-      } else {
-        let endValue = signup.get("Deadline");
-        end =
-          Array.isArray(endValue) && endValue.length > 0 ? endValue[0] : null;
-      }
-
-      let itemValue = signup.get("Item");
-      let item =
-        Array.isArray(itemValue) && itemValue.length > 0 ? itemValue[0] : null;
-
-      return {
-        id: signup.id,
-        title: signup.get("Item Title"),
-        count: signup.get("Number"),
-        item,
-        start,
-        end,
-        notes: signup.get("Notes"),
-      };
-    }),
-    inactive: inactive.map((signup) => {
-      let startValue = signup.get("Start");
-      let start =
-        Array.isArray(startValue) && startValue.length > 0
-          ? startValue[0]
-          : null;
-      let end;
-      if (start) {
-        let endValue = signup.get("End");
-        end =
-          Array.isArray(endValue) && endValue.length > 0 ? endValue[0] : null;
-      } else {
-        let endValue = signup.get("Deadline");
-        end =
-          Array.isArray(endValue) && endValue.length > 0 ? endValue[0] : null;
-      }
-
-      let itemValue = signup.get("Item");
-      let item =
-        Array.isArray(itemValue) && itemValue.length > 0 ? itemValue[0] : null;
-
-      return {
-        id: signup.id,
-        title: signup.get("Item Title"),
-        count: signup.get("Number"),
-        item,
-        start,
-        end,
-        notes: signup.get("Notes"),
-      };
-    }),
+    signups: await Promise.all(
+      signups.map(async (signup) => {
+        return {
+          id: signup.id,
+          title: signup.item_title,
+          count: signup.quantity,
+          start: signup.start_time,
+          end: signup.end_time,
+          notes: signup.notes,
+        };
+      })
+    ),
+    inactive: await Promise.all(
+      inactive.map(async (signup) => {
+        return {
+          id: signup.id,
+          title: signup.item_title,
+          count: signup.quantity,
+          start: signup.start_time,
+          end: signup.end_time,
+          notes: signup.notes,
+        };
+      })
+    ),
     success: req.query.success,
     loggedIn: userID,
   });
@@ -317,8 +278,7 @@ app.get(
       return res.render("login", data);
     }
 
-    let code = getMagicCodeForUser(req.query.user);
-
+    let code = await getMagicCodeForUser(req.query.user);
     if (code == req.query.code) {
       const token = jwt.sign(
         { userID: req.query.user },
@@ -465,28 +425,16 @@ app.get(
     let userID = isLoggedIn(req, res);
     let item = await getItem(req.query.item);
 
-    let startValue = item.get("Start");
-    let start =
-      Array.isArray(startValue) && startValue.length > 0 ? startValue[0] : null;
-    let end;
-    if (start) {
-      let endValue = item.get("End");
-      end = Array.isArray(endValue) && endValue.length > 0 ? endValue[0] : null;
-    } else {
-      let endValue = item.get("Deadline");
-      end = Array.isArray(endValue) && endValue.length > 0 ? endValue[0] : null;
-    }
-
     return res.render("signup", {
       loggedIn: userID,
       itemID: req.query.item,
-      eventID: item.get("Event")[0],
+      eventID: item.event_id,
       item: {
-        title: item.get("Title"),
-        start,
-        end,
-        notes: item.get("Notes"),
-        needed: item.get("Needed"),
+        title: item.title,
+        start: item.start_time,
+        end: item.end_time,
+        notes: item.notes,
+        needed: item.needed,
       },
     });
   }
@@ -509,81 +457,42 @@ app.post(
       });
     }
 
-    let count = parseInt(req.body.quantity);
+    let item_id = req.body.item;
+    let quantity = parseInt(req.body.quantity);
     let comment = req.body.comment;
 
-    await base("Signups")
-      .create([
-        {
-          fields: {
-            Item: [req.body.item],
-            User: [userID],
-            Number: count,
-            Comments: comment,
-          },
-        },
-      ])
-      .catch((err) => {
-        console.error(err);
-        return res.render("error", {
-          loggedIn: userID,
-          context: "Failed to store signup",
-          error: err.toString(),
-        });
-      });
+    let signup = {
+      item_id,
+      user_id: userID,
+      quantity,
+      comment,
+    };
+    let signup_id = createSignup(signup);
 
-    let user = await base("Users")
-      .find(userID)
-      .catch((err) => {
-        console.log(`Error retrieving user: ${err}`);
-        return res.render("error", {
-          context: "Error retrieving user.",
-          error: err.toString(),
-        });
-      });
-
-    let item = await base("Items")
-      .find(req.body.item)
-      .catch((err) => {
-        console.log(`Error retrieving item: ${err}`);
-        return res.render("error", {
-          context: "Error retrieving item.",
-          error: err.toString(),
-        });
-      });
-
-    let startValue = item.get("Start");
-    let start =
-      Array.isArray(startValue) && startValue.length > 0 ? startValue[0] : null;
-    let end;
-    if (start) {
-      let endValue = item.get("End");
-      end = Array.isArray(endValue) && endValue.length > 0 ? endValue[0] : null;
-    } else {
-      let endValue = item.get("Deadline");
-      end = Array.isArray(endValue) && endValue.length > 0 ? endValue[0] : null;
-    }
+    let user = await getUser(userID);
+    let item = await getItem(item_id);
+    let event = await getEvent(item.event_id);
 
     sendConfirmation(
-      user.get("Email"),
+      user.email,
       {
-        event: item.get("Event Title"),
-        eventDescription: item.get("Event Description"),
-        emailInfo: item.get("Email Info"),
-        eventEmailInfo: item.get("Event Email Info"),
-        title: item.get("Title"),
-        start,
-        end,
-        notes: item.get("Notes"),
+        event: item.title,
+        eventDescription: event.description,
+        emailInfo: item.email_info,
+        eventEmailInfo: event.email_info,
+        title: item.title,
+        start: item.start_time,
+        end: item.end_time,
+        notes: item.notes,
       },
-      count,
+      quantity,
       comment
     );
 
     return res.render("success", {
       loggedIn: userID,
-      item: item.fields,
-      count: count,
+      item: item,
+      count: quantity,
       comment: comment,
       event: req.body.event,
     });
@@ -609,20 +518,9 @@ app.delete(
       return res.status(401).json({ error: "User not logged in" });
     }
 
-    let signup = await base("Signups")
-      .find(req.body.signup)
-      .catch((err) => {
-        console.log(`Error retrieving signup: ${err}`);
-        return res.status(400).json({ error: "Invalid signup ID" });
-      });
-
-    if (signup && signup.get("User ID") == userID) {
-      await base("Signups")
-        .update([{ id: req.body.signup, fields: { Number: 0 } }])
-        .catch((err) => {
-          console.log(`Error deleting signup: ${err}`);
-          return res.status(500).json({ error: "Error deleting signup" });
-        });
+    let signup = await getSignup(req.body.signup);
+    if (signup && signup.user_id == userID) {
+      deleteSignup(signup.id);
 
       sendCancellation(signup);
       return res.status(200).json({ success: true });
