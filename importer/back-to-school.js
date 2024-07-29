@@ -2,14 +2,17 @@ const dotenv = require("dotenv");
 dotenv.config();
 const Airtable = require("airtable");
 const sanitizeHtml = require("sanitize-html");
+const { init: dbInit, createItem, createKid } = require("../db");
 
 Airtable.configure({
   apiKey: process.env.AIRTABLE_API_KEY,
 });
 const signupBase = Airtable.base(process.env.AIRTABLE_BASE);
 
-const sourceBase = Airtable.base("appq5qYIbFYbqvqYv");
-const signupEvent = "recZnInmgAzcelnht";
+const sourceBase = Airtable.base("appWT0Yk9UfeIQhN4");
+const signupEvent = 8;
+
+dbInit();
 
 async function fetchChildren() {
   let children = await sourceBase("Children")
@@ -22,50 +25,63 @@ async function fetchChildren() {
       console.error("error fetching children", err);
     });
 
-  children = children.map((child) => {
-    return {
-      airtable_id: child.id,
-      id: child.get("ID"),
-      age: child.get("Age"),
-      gender: child.get("Gender"),
-      shirtSize: child.get("Shirt Size"),
-      pantSize: child.get("Pant Size"),
-      color: child.get("Favorite Color"),
-      comments: child.get("Additional Comments"),
-    };
-  });
-
   return children;
 }
 
+function normalizeGender(input) {
+  if (!input) {
+    return "";
+  }
+
+  const lowerInput = input.toLowerCase();
+  const genderMap = {
+    boy: "boy",
+    male: "boy",
+    m: "boy",
+    girl: "girl",
+    female: "girl",
+    f: "girl",
+  };
+
+  return genderMap[lowerInput] || "";
+}
+
 async function addChildrenToEvent(children) {
-  await signupBase("Items")
-    .create(
-      children.map((child) => {
-        let notes = `<ul><li><b>Age:</b> ${child.age}</li><li><b>Gender:</b> ${child.gender}</li><li><b>Shirt Size:</b> ${child.shirtSize}</li><li><b>Pant Size:</b> ${child.pantSize}</li><li><b>Favorite Color:</b> ${child.color}</li>`;
-        if (child.comments) {
-          notes = `${notes}<li><b>Additional Comments:</b> ${child.comments}</li>`;
-        }
-        notes = `${notes}<li><b>Child ID:</b> ${child.id}</li></ul>`;
-        notes = sanitizeHtml(notes, {
-          allowedTags: ["b", "i", "em", "strong", "a", "br", "ul", "li"],
-          allowedAttributes: {
-            a: ["href"],
-          },
-        });
-        return {
-          fields: {
-            Notes: notes,
-            Event: [signupEvent],
-            "End Time": "2023-08-13T12:00:00.000-04:00",
-            Needed: 1,
-          },
-        };
-      })
-    )
-    .catch((err) => {
-      console.error("error creating items", err);
+  for (let child of children) {
+    let kid = {
+      event: signupEvent,
+      name: child.get("Name"),
+      shelter: child.get("Shelter"),
+      age: child.get("Age"),
+      gender: normalizeGender(child.get("Gender")),
+      shirt_size: child.get("Shirt Size"),
+      pant_size: child.get("Pant Size"),
+      color: child.get("Favorite Color"),
+      comments: child.get("Additional Comments"),
+    };
+    kid.id = await createKid(kid);
+
+    let notes = `${kid.age} year old ${kid.gender}`;
+    let email_info = `<ul><li><b>Age:</b> ${kid.age}</li><li><b>Gender:</b> ${kid.gender}</li><li><b>Shirt Size:</b> ${kid.shirt_size}</li><li><b>Pant Size:</b> ${kid.pant_size}</li><li><b>Favorite Color:</b> ${kid.color}</li>`;
+    if (kid.comments) {
+      email_info = `${email_info}<li><b>Additional Comments:</b> ${kid.comments}</li>`;
+    }
+    email_info = sanitizeHtml(email_info, {
+      allowedTags: ["b", "i", "em", "strong", "a", "br", "ul", "li"],
+      allowedAttributes: {
+        a: ["href"],
+      },
     });
+    let item = {
+      id: kid.id,
+      event_id: signupEvent,
+      title: `Child ${kid.id}`,
+      notes,
+      email_info,
+      needed: 1,
+    };
+    createItem(item);
+  }
 }
 
 async function markChildrenAsAdded(children) {
@@ -73,7 +89,7 @@ async function markChildrenAsAdded(children) {
     .update(
       children.map((child) => {
         return {
-          id: child.airtable_id,
+          id: child.id,
           fields: {
             Added: true,
           },

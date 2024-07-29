@@ -15,11 +15,14 @@ html
           each event in events
             .row
               .column
-                h2 #{event.Title}
-                p #{event.Description}
+                h2 #{event.title}
+                if event.summary
+                  p #{event.summary}
+                else
+                  p #{event.description}
                 p.button-p
-                  a(class="button-style button-style3" href="/event/" + event.ID) Go to Sign Up Page
+                  a(class="button-style button-style3" href="/event/" + event.id) Go to Sign Up Page
               .column
-                img(src=event.Image, alt=event.Title)
+                img(src=event.image, alt=event.title)
             hr
       include footer

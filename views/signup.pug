@@ -17,12 +17,13 @@ html
     .outer-main
       main
         section(class="Main-content")
+          h2 #{event.title}
           if item.title
             h3 #{item.title}
-          if item.start && item.end
-            p #{item.start} - #{item.end}
-          else if item.end
-            p Deadline: #{item.end}
+          if item.start_time && item.end_time
+            p #{item.start_time} - #{item.end_time}
+          else if item.end_time
+            p Deadline: #{item.end_time}
           p!= item.notes
           form.signup(method="POST" action="/signup")
             .form-group 
@@ -33,8 +34,8 @@ html
                 input#quantity.form-control(type='number' name='quantity' value=1)
               else
                 input#quantity(type='hidden' name='quantity' value=1)
-              input#item(type='hidden' name='item' value=itemID)
-              input#item(type='hidden' name='event' value=eventID)
+              input#item(type='hidden' name='item' value=item.id)
+              input#item(type='hidden' name='event' value=event.id)
               .center
                 button(type='submit' class='button-style button-style2' onclick='submitForm(this)') Sign Up
       include footer

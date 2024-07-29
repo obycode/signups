@@ -10,17 +10,23 @@ html
     .outer-main
       main
         section(class="Main-content")
-          p Sign up successful! We've sent the details to your email.
+          p Sign up successful! We've sent these details to your email.
+          if event.email_info
+            p !{event.email_info}
           if item.title
             h3 #{item.title}
-          if start && end
-            p #{start} - #{end}
-          else if end
-            p Deadline: #{end}
-          p!= item.Notes
+          if item.email_info
+            p !{item.email_info}
+          if item.start_time && item.end_time
+            p #{item.start_time} - #{item.end_time}
+          else if item.end_time
+            p Deadline: #{item.end_time}
+          p !{item.notes}
+          if item.emailInfo
+            p !{item.emailInfo}
           p Signed up for: #{count}
           if comment
             p Comment: #{comment}
           p
-            a(href=`/event/${event}` class='button-style button-style1') Sign up for another
+            a(href=`/event/${event.id}` class='button-style button-style1') Sign up for another
       include footer

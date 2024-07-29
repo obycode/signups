@@ -5,36 +5,36 @@ html
     meta(name="viewport" content="width=device-width, initial-scale=1, user-scalable=no")
     link(rel="stylesheet" href="/assets/css/main.css")
   body(class="landing is-preload")
-    - var title = event.Title;
+    - var title = event.title;
     include header
     .outer-main
       main
         section(class="Main-content")
           .event
             p
-              img(src=event.Image, alt=event.Title)
-            p #{event.Description}
+              img(src=event.image, alt=event.title)
+            p !{event.description}
             hr
             for item in items
               .row
                 .column
-                  if item.Title
-                    h2 #{item.Title}
+                  if item.title
+                    h2 #{item.title}
                   .item
-                    p!= item.Notes
+                    p!= item.notes
                 .column
-                  if item.Start && item.End
-                    p #{item.Start} - #{item.End}
-                  else if item.End
-                    p Deadline: #{item.End}
-                  if item.Have < item.Needed
+                  if item.start && item.end
+                    p #{item.start} - #{item.end}
+                  else if item.end
+                    p Deadline: #{item.end}
+                  if item.signups < item.needed
                     p
-                      span.slots #{item.Have} of #{item.Needed}
+                      span.slots #{item.signups} of #{item.needed}
                     p.button-p 
                       if loggedIn
-                        a(href="/signup?item=" + item.ID class="button-style button-style2") Sign Up
+                        a(href="/signup?item=" + item.id class="button-style button-style2") Sign Up
                       else 
-                        a(href="/login?item=" + item.ID class="button-style button-style2") Sign Up
+                        a(href="/login?item=" + item.id class="button-style button-style2") Sign Up
                   else
                     span.slots Needs Met!
               hr

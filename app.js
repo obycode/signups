@@ -10,6 +10,21 @@ const neoncrm = require("@obycode/neoncrm");
 var cookieParser = require("cookie-parser");
 const jwt = require("jsonwebtoken");
 const { v4: uuidv4 } = require("uuid");
+const {
+  init: dbInit,
+  getActiveEvents,
+  getActiveSignupsForUser,
+  getInactiveSignupsForUser,
+  getMagicCodeForUser,
+  getUser,
+  getUserByEmail,
+  getItemsForEvent,
+  getEvent,
+  getItem,
+  createSignup,
+  getSignup,
+  cancelSignup,
+} = require("./db");
 
 let neon = new neoncrm.Client(
   process.env.NEON_ORG_ID,
@@ -25,13 +40,6 @@ app.set("view engine", "pug");
 
 app.use(cookieParser(process.env.COOKIE_SECRET));
 
-const Airtable = require("airtable");
-
-Airtable.configure({
-  apiKey: process.env.AIRTABLE_API_KEY,
-});
-const base = Airtable.base(process.env.AIRTABLE_BASE);
-
 // Serve static files from public/ (ex. /images/foo.jpg)
 app.use(express.static("public"));
 app.use(express.json());
@@ -40,6 +48,10 @@ app.use(
     extended: true,
   })
 );
+
+(async () => {
+  await dbInit(false);
+})();
 
 function isLoggedIn(req, res) {
   const token = req.cookies.token;
@@ -137,8 +149,11 @@ async function sendConfirmation(email, item, count, comment) {
 /// Send an email to Ashley letting her know that a signup has been cancelled.
 async function sendCancellation(signup) {
   const email = "ashley@empower4lifemd.org";
-  const itemsLink =
-    "https://airtable.com/app087A4CurWjxse2/tblYCbwlZ5GwBZSVq/viwIqmIZu9HCnK28P?blocks=hide";
+  const item = await getItem(signup.item_id);
+  const event = await getEvent(item.event_id);
+  const user = await getUser(signup.user_id);
+
+  const itemsLink = "https://signups.empower4lifemd.org/event/" + event.id;
 
   let emailBody = pug.renderFile("views/e4l-mail.pug", {
     title: "Empower4Life Signups Cancellation",
@@ -148,13 +163,13 @@ async function sendCancellation(signup) {
       alt: "Empower4Life Logo",
     },
     bodyTop: pug.renderFile("views/cancellation.pug", {
-      user: signup.get("User Name"),
-      event: signup.get("Event Title"),
-      item: signup.get("Item Title"),
+      user: user.name,
+      event: event.title,
+      item: item.title,
     }),
     button: {
       url: itemsLink,
-      text: "Go to Signups Table",
+      text: "Go to Signups Event",
     },
   });
   emailBody = await inlineCss(emailBody, {
@@ -166,9 +181,9 @@ async function sendCancellation(signup) {
     from: "Empower4Life <jennifer@empower4lifemd.org>",
     subject: "Signup Cancellation",
     text: pug.renderFile("views/cancellation-text.pug", {
-      user: signup.get("User Name"),
-      event: signup.get("Event Title"),
-      item: signup.get("Item Title"),
+      user: user.name,
+      event: event.title,
+      item: item.title,
       link: itemsLink,
     }),
     html: emailBody,
@@ -180,42 +195,28 @@ async function sendCancellation(signup) {
   }
 }
 
+function setTimes(record) {
+  if (record.start_time) {
+    const date = new Date(record.start_time);
+    record.start = date.toLocaleString("en-US", {
+      timeZone: "America/New_York",
+    });
+  }
+  if (record.end_time) {
+    const date = new Date(record.end_time);
+    record.end = date.toLocaleString("en-US", { timeZone: "America/New_York" });
+  }
+  return record;
+}
+
 app.get("/", async (req, res) => {
   let userID = isLoggedIn(req, res);
-  var events = [];
 
-  base("Events")
-    .select({
-      filterByFormula: "{Active}",
-      sort: [{ field: "ID", direction: "asc" }],
-    })
-    .eachPage(
-      function page(records, fetchNextPage) {
-        for (const record of records) {
-          events.push({
-            ID: record.id,
-            Active: record.get("Active"),
-            Title: record.get("Title"),
-            Description: record.get("Description"),
-            Image: record.get("Image")[0].url,
-          });
-        }
-        fetchNextPage();
-      },
-      function done(err) {
-        if (err) {
-          console.error(err);
-          return res.render("error", {
-            context: "Failed to retrieve events",
-            error: err.toString(),
-          });
-        }
-        res.render("events", {
-          loggedIn: userID,
-          events: events,
-        });
-      }
-    );
+  const events = await getActiveEvents();
+  res.render("events", {
+    loggedIn: userID,
+    events,
+  });
 });
 
 app.get("/user", async (req, res) => {
@@ -225,98 +226,36 @@ app.get("/user", async (req, res) => {
   }
 
   // Retrieve the active signups
-  let signups = await base("Signups")
-    .select({
-      filterByFormula: `AND({Active}, {User ID} = '${userID}', {Number} > 0)`,
-      view: "API",
-    })
-    .all()
-    .catch((err) => {
-      console.error(err);
-      return res.render("error", {
-        context: "Error retrieving signups.",
-        error: err.toString(),
-      });
-    });
+  let signups = await getActiveSignupsForUser(userID);
 
   // Retrieve the inactive signups
-  let inactive = await base("Signups")
-    .select({
-      filterByFormula: `AND({Active} = FALSE(), {User ID} = '${userID}', {Number} > 0)`,
-      view: "API",
-    })
-    .all()
-    .catch((err) => {
-      console.error(err);
-      return res.render("error", {
-        context: "Error retrieving signups.",
-        error: err.toString(),
-      });
-    });
+  let inactive = await getInactiveSignupsForUser(userID);
 
   res.render("user", {
-    signups: signups.map((signup) => {
-      let startValue = signup.get("Start");
-      let start =
-        Array.isArray(startValue) && startValue.length > 0
-          ? startValue[0]
-          : null;
-      let end;
-      if (start) {
-        let endValue = signup.get("End");
-        end =
-          Array.isArray(endValue) && endValue.length > 0 ? endValue[0] : null;
-      } else {
-        let endValue = signup.get("Deadline");
-        end =
-          Array.isArray(endValue) && endValue.length > 0 ? endValue[0] : null;
-      }
-
-      let itemValue = signup.get("Item");
-      let item =
-        Array.isArray(itemValue) && itemValue.length > 0 ? itemValue[0] : null;
-
-      return {
-        id: signup.id,
-        title: signup.get("Item Title"),
-        count: signup.get("Number"),
-        item,
-        start,
-        end,
-        notes: signup.get("Notes"),
-      };
-    }),
-    inactive: inactive.map((signup) => {
-      let startValue = signup.get("Start");
-      let start =
-        Array.isArray(startValue) && startValue.length > 0
-          ? startValue[0]
-          : null;
-      let end;
-      if (start) {
-        let endValue = signup.get("End");
-        end =
-          Array.isArray(endValue) && endValue.length > 0 ? endValue[0] : null;
-      } else {
-        let endValue = signup.get("Deadline");
-        end =
-          Array.isArray(endValue) && endValue.length > 0 ? endValue[0] : null;
-      }
-
-      let itemValue = signup.get("Item");
-      let item =
-        Array.isArray(itemValue) && itemValue.length > 0 ? itemValue[0] : null;
-
-      return {
-        id: signup.id,
-        title: signup.get("Item Title"),
-        count: signup.get("Number"),
-        item,
-        start,
-        end,
-        notes: signup.get("Notes"),
-      };
-    }),
+    signups: await Promise.all(
+      signups.map(async (signup) => {
+        return {
+          id: signup.id,
+          title: signup.item_title,
+          count: signup.quantity,
+          start: signup.start_time,
+          end: signup.end_time,
+          notes: signup.notes,
+        };
+      })
+    ),
+    inactive: await Promise.all(
+      inactive.map(async (signup) => {
+        return {
+          id: signup.id,
+          title: signup.item_title,
+          count: signup.quantity,
+          start: signup.start_time,
+          end: signup.end_time,
+          notes: signup.notes,
+        };
+      })
+    ),
     success: req.query.success,
     loggedIn: userID,
   });
@@ -339,17 +278,8 @@ app.get(
       return res.render("login", data);
     }
 
-    let user = await base("Users")
-      .find(req.query.user)
-      .catch((err) => {
-        console.log(`Error retrieving user: ${err}`);
-        return res.render("error", {
-          context: "Error retrieving account.",
-          error: err.toString(),
-        });
-      });
-
-    if (user.get("Magic Code") == req.query.code) {
+    let code = await getMagicCodeForUser(req.query.user);
+    if (code == req.query.code) {
       const token = jwt.sign(
         { userID: req.query.user },
         process.env.JWT_SECRET,
@@ -398,20 +328,8 @@ app.post(
       return res.render("login", data);
     }
 
-    let users = await base("Users")
-      .select({
-        filterByFormula: `{Email} = '${req.body.email}'`,
-      })
-      .all()
-      .catch((err) => {
-        console.error(err);
-        return res.render("error", {
-          context: "Error retrieving account.",
-          error: err.toString(),
-        });
-      });
-
-    if (!users.length) {
+    let user = await getUserByEmail(req.body.email);
+    if (!user) {
       return res.render("register", {
         email: req.body.email,
         item: req.body.item,
@@ -420,13 +338,7 @@ app.post(
         ],
       });
     }
-    let user = users[0];
-    sendMagicLink(
-      req.body["email"],
-      user.id,
-      user.get("Magic Code"),
-      req.body.item
-    );
+    sendMagicLink(req.body["email"], user.id, user.magic_code, req.body.item);
 
     res.render("link-sent");
   }
@@ -460,156 +372,50 @@ app.post(
     }
 
     // First check if this user already exists
-    let users = await base("Users")
-      .select({
-        filterByFormula: `{Email} = '${req.body.email}'`,
-      })
-      .all()
-      .catch((err) => {
-        console.error(err);
-        return res.render("error", {
-          context: "Error retrieving account.",
-          error: err.toString(),
-        });
-      });
+    let user = getUserByEmail(req.body.email);
 
     // If an account already exists for this email, just send the magic code email
-    if (users.length > 0) {
-      let user = users[0];
-      sendMagicLink(
-        req.body["email"],
-        user.id,
-        user.get("Magic Code"),
-        req.body.item
-      );
+    if (user) {
+      sendMagicLink(req.body["email"], user.id, user.magic_code, req.body.item);
 
       return res.render("link-sent");
     }
 
     // Create a new user
     let magicCode = uuidv4();
-    users = await base("Users")
-      .create([
-        {
-          fields: {
-            Name: req.body.name,
-            Email: req.body.email,
-            Phone: req.body.phone,
-            "Magic Code": magicCode,
-          },
-        },
-      ])
-      .catch((err) => {
-        console.error(err);
-        return res.render("error", {
-          context: "Error creating account.",
-          error: err.toString(),
-        });
-      });
+    let user_id = await createUser({
+      name: req.body.name,
+      email: req.body.email,
+      phone: req.body.phone,
+      magic_code: magicCode,
+    });
 
-    if (!users.length) {
-      res.render("register", {
-        name: req.body.name,
-        email: req.body.email,
-        phone: req.body.phone,
-        item: req.body.item,
-        errors: [{ msg: "Something went wrong, please try again." }],
-      });
-    }
-    let user = users[0];
-    sendMagicLink(
-      req.body["email"],
-      user.id,
-      user.get("Magic Code"),
-      req.body.item
-    );
+    sendMagicLink(req.body["email"], user_id, magicCode, req.body.item);
 
     res.render("link-sent");
   }
 );
 
-async function renderEvent(userID, record, res) {
-  let rawItems = await base("Items")
-    .select({
-      filterByFormula: `{Event ID} = '${record.get("ID")}'`,
-      sort: [{ field: "Filled", direction: "asc" }],
-    })
-    .all()
-    .catch((err) => {
-      console.error(err);
-      return res.render("error", {
-        context: "Error retrieving items.",
-        error: err.toString(),
-      });
-    });
-
-  let items = rawItems.map((item) => {
-    let start = item.get("Start");
-    let end;
-    if (start) {
-      end = item.get("End");
-    } else {
-      end = item.get("Deadline");
-    }
-    return {
-      ID: item.id,
-      Title: item.get("Title"),
-      Notes: item.get("Notes"),
-      Start: start,
-      End: end,
-      Needed: item.get("Needed"),
-      Have: item.get("Have"),
-    };
-  });
+async function renderEvent(userID, event, res) {
+  let items = await getItemsForEvent(event.id);
+  items = items.map(setTimes);
 
   return res.render("event", {
     loggedIn: userID,
-    event: {
-      ID: record.id,
-      Active: record.get("Active"),
-      Title: record.get("Title"),
-      Description: record.get("Description"),
-      Image: record.get("Image")[0].url,
-    },
-    items: items,
+    event,
+    items,
   });
 }
 
 app.get("/event/:eventID", async (req, res) => {
   let userID = isLoggedIn(req, res);
-  // This case handles when the eventID is the record ID
-  if (isNaN(req.params.eventID)) {
-    base("Events").find(req.params.eventID, async function (err, record) {
-      if (err) {
-        console.error(err);
-        return res.render("event", {
-          loggedIn: userID,
-          error: `Event not found`,
-        });
-      }
-      return await renderEvent(userID, record, res);
-    });
-  } else {
-    // This case handles when the eventID is the ID number from the table
-    let events = await base("Events")
-      .select({
-        filterByFormula: `{ID} = '${req.params.eventID}'`,
-      })
-      .all()
-      .catch((err) => {
-        console.error(err);
-        return res.render("error", {
-          context: "Error retrieving event.",
-          error: err.toString(),
-        });
-      });
 
-    if (!events.length) {
-      return res.redirect("/");
-    }
-    let record = events[0];
-    return await renderEvent(userID, record, res);
+  let event = await getEvent(req.params.eventID);
+  if (!event) {
+    return res.redirect("/");
   }
+
+  return await renderEvent(userID, event, res);
 });
 
 app.get(
@@ -617,35 +423,13 @@ app.get(
   [check("item", "Missing or invalid item ID").trim().escape()],
   async (req, res) => {
     let userID = isLoggedIn(req, res);
-    let item = await base("Items")
-      .find(req.query.item)
-      .catch((err) => {
-        console.log(`Error retrieving item: ${err}`);
-        return res.render("error", {
-          context: "Error retrieving item.",
-          error: err.toString(),
-        });
-      });
-
-    let start = item.get("Start");
-    let end;
-    if (start) {
-      end = item.get("End");
-    } else {
-      end = item.get("Deadline");
-    }
+    let item = await getItem(req.query.item);
+    let event = await getEvent(item.event_id);
 
     return res.render("signup", {
       loggedIn: userID,
-      itemID: req.query.item,
-      eventID: item.get("Event")[0],
-      item: {
-        title: item.get("Title"),
-        start,
-        end,
-        notes: item.get("Notes"),
-        needed: item.get("Needed"),
-      },
+      event,
+      item,
     });
   }
 );
@@ -667,79 +451,44 @@ app.post(
       });
     }
 
-    let count = parseInt(req.body.quantity);
+    let item_id = req.body.item;
+    let quantity = parseInt(req.body.quantity);
     let comment = req.body.comment;
 
-    await base("Signups")
-      .create([
-        {
-          fields: {
-            Item: [req.body.item],
-            User: [userID],
-            Number: count,
-            Comments: comment,
-          },
-        },
-      ])
-      .catch((err) => {
-        console.error(err);
-        return res.render("error", {
-          loggedIn: userID,
-          context: "Failed to store signup",
-          error: err.toString(),
-        });
-      });
+    let signup = {
+      item_id,
+      user_id: userID,
+      quantity,
+      comment,
+    };
+    let signup_id = createSignup(signup);
 
-    let user = await base("Users")
-      .find(userID)
-      .catch((err) => {
-        console.log(`Error retrieving user: ${err}`);
-        return res.render("error", {
-          context: "Error retrieving user.",
-          error: err.toString(),
-        });
-      });
-
-    let item = await base("Items")
-      .find(req.body.item)
-      .catch((err) => {
-        console.log(`Error retrieving item: ${err}`);
-        return res.render("error", {
-          context: "Error retrieving item.",
-          error: err.toString(),
-        });
-      });
-
-    let start = item.get("Start");
-    let end;
-    if (start) {
-      end = item.get("End");
-    } else {
-      end = item.get("Deadline");
-    }
+    let user = await getUser(userID);
+    let item = await getItem(item_id);
+    let event = await getEvent(item.event_id);
 
     sendConfirmation(
-      user.get("Email"),
+      user.email,
       {
-        event: item.get("Event Title"),
-        eventDescription: item.get("Event Description"),
-        emailInfo: item.get("Email Info"),
-        eventEmailInfo: item.get("Event Email Info"),
-        title: item.get("Title"),
-        start,
-        end,
-        notes: item.get("Notes"),
+        event: item.title,
+        eventDescription: event.description,
+        emailInfo: item.email_info,
+        eventEmailInfo: event.email_info,
+        title: item.title,
+        start: item.start_time,
+        end: item.end_time,
+        notes: item.notes,
       },
-      count,
+      quantity,
       comment
     );
 
     return res.render("success", {
       loggedIn: userID,
-      item: item.fields,
-      count: count,
+      item: item,
+      count: quantity,
       comment: comment,
-      event: req.body.event,
+      event: event,
     });
   }
 );
@@ -763,20 +512,9 @@ app.delete(
       return res.status(401).json({ error: "User not logged in" });
     }
 
-    let signup = await base("Signups")
-      .find(req.body.signup)
-      .catch((err) => {
-        console.log(`Error retrieving signup: ${err}`);
-        return res.status(400).json({ error: "Invalid signup ID" });
-      });
-
-    if (signup && signup.get("User ID") == userID) {
-      await base("Signups")
-        .update([{ id: req.body.signup, fields: { Number: 0 } }])
-        .catch((err) => {
-          console.log(`Error deleting signup: ${err}`);
-          return res.status(500).json({ error: "Error deleting signup" });
-        });
+    let signup = await getSignup(req.body.signup);
+    if (signup && signup.user_id == userID) {
+      cancelSignup(signup.id);
 
       sendCancellation(signup);
       return res.status(200).json({ success: true });

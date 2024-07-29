@@ -1,7 +1,8 @@
 h2 #{item.event}
-p #{item.eventDescription}
 if item.eventEmailInfo
-  p #{item.eventEmailInfo}
+  p !{item.eventEmailInfo}
+else
+  p !{item.eventDescription}
 h2 Thanks for signing up!
 p Here are the details of your signup:
 ul
@@ -9,9 +10,10 @@ ul
     li #[h3 #{item.title}]
   li
     p #[strong Details:]
-    p !{item.notes}
     if item.emailInfo
       p !{item.emailInfo}
+    else
+      p !{item.notes}
   if item.start && item.end
     li #[strong Time:] #{item.start} - #{item.end}
   else if item.end
