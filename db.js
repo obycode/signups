@@ -14,6 +14,7 @@ async function ensureEventsTable(client) {
       CREATE TABLE events (
         id SERIAL PRIMARY KEY,
         title TEXT,
+        summary TEXT,
         description TEXT,
         email_info TEXT,
         image TEXT,
@@ -81,10 +82,37 @@ async function ensureSignupsTable(client) {
         user_id INTEGER,
         quantity INTEGER,
         comment TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        canceled_at TIMESTAMP
     );
     `);
     console.log("Created 'signups' table.");
+  }
+}
+
+async function ensureKidsTable(client) {
+  const exists = await client.query(`SELECT EXISTS (
+    SELECT FROM information_schema.tables
+    WHERE table_name = 'kids'
+  );`);
+
+  if (!exists.rows[0].exists) {
+    await client.query(`
+      CREATE TABLE kids (
+        id SERIAL PRIMARY KEY,
+        event INTEGER,
+        name TEXT,
+        shelter TEXT,
+        age INTEGER,
+        gender TEXT,
+        shirt_size TEXT,
+        pant_size TEXT,
+        color TEXT,
+        comments TEXT,
+        internal TEXT
+    );
+    `);
+    console.log("Created 'kids' table.");
   }
 }
 
@@ -105,6 +133,7 @@ async function init() {
     ensureItemsTable(client);
     ensureUsersTable(client);
     ensureSignupsTable(client);
+    ensureKidsTable(client);
   } catch (err) {
     console.error("Error initializing tables:", err);
   } finally {
@@ -174,14 +203,15 @@ async function getActiveEvents() {
 async function createItem(item) {
   const result = await pool.query(
     `
-    INSERT INTO items (event_id, title, notes, start_time, end_time, needed)
-    VALUES ($1, $2, $3, $4, $5, $6)
+    INSERT INTO items (event_id, title, notes, email_info, start_time, end_time, needed)
+    VALUES ($1, $2, $3, $4, $5, $6, $7)
     RETURNING id
   `,
     [
       item.event_id,
       item.title,
       item.notes,
+      item.email_info,
       item.start_time,
       item.end_time,
       item.needed,
@@ -322,7 +352,7 @@ async function getActiveSignupsForUser(user_id) {
         FROM signups
         JOIN items ON signups.item_id = items.id
         JOIN events ON items.event_id = events.id
-        WHERE user_id = $1 AND events.active = true
+        WHERE user_id = $1 AND events.active = true AND signups.canceled_at IS NULL
       `,
       [user_id]
     );
@@ -343,7 +373,7 @@ async function getInactiveSignupsForUser(user_id) {
         FROM signups
         JOIN items ON signups.item_id = items.id
         JOIN events ON items.event_id = events.id
-        WHERE user_id = $1 AND events.active = false
+        WHERE user_id = $1 AND events.active = false AND signups.canceled_at IS NULL
       `,
       [user_id]
     );
@@ -374,17 +404,64 @@ async function getSignup(signup_id) {
   }
 }
 
-async function deleteSignup(signup_id) {
+async function cancelSignup(signup_id) {
   try {
     await pool.query(
       `
-        DELETE FROM signups
+        UPDATE signups
+        SET canceled_at = CURRENT_TIMESTAMP
         WHERE id = $1
       `,
       [signup_id]
     );
   } catch (err) {
     console.error(err);
+  }
+}
+
+
+// KIDS
+
+async function createKid(kid) {
+  const result = await pool.query(
+    `
+    INSERT INTO kids (event, name, shelter, age, gender, shirt_size, pant_size, color, comments, internal)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+    RETURNING id
+  `,
+    [
+      kid.event,
+      kid.name,
+      kid.shelter,
+      kid.age,
+      kid.gender,
+      kid.shirt_size,
+      kid.pant_size,
+      kid.color,
+      kid.comments,
+      kid.internal,
+    ]
+  );
+  return result.rows[0].id;
+}
+
+async function getKid(kid_id) {
+  try {
+    const result = await pool.query(
+      `
+        SELECT * FROM kids
+        WHERE id = $1
+      `,
+      [kid_id]
+    );
+
+    if (result.rows.length === 0) {
+      return null;
+    }
+    return result.rows[0];
+  } catch (err) {
+    console.error(err);
+    return null;
   }
 }
 
@@ -404,5 +481,7 @@ module.exports = {
   getActiveSignupsForUser,
   getInactiveSignupsForUser,
   getSignup,
-  deleteSignup,
+  cancelSignup,
+  createKid,
+  getKid,
 };

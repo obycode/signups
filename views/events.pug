@@ -16,7 +16,10 @@ html
             .row
               .column
                 h2 #{event.title}
-                p #{event.description}
+                if event.summary
+                  p #{event.summary}
+                else
+                  p #{event.description}
                 p.button-p
                   a(class="button-style button-style3" href="/event/" + event.id) Go to Sign Up Page
               .column

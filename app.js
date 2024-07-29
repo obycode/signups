@@ -23,7 +23,7 @@ const {
   getItem,
   createSignup,
   getSignup,
-  deleteSignup,
+  cancelSignup,
 } = require("./db");
 
 let neon = new neoncrm.Client(
@@ -424,18 +424,12 @@ app.get(
   async (req, res) => {
     let userID = isLoggedIn(req, res);
     let item = await getItem(req.query.item);
+    let event = await getEvent(item.event_id);
 
     return res.render("signup", {
       loggedIn: userID,
-      itemID: req.query.item,
-      eventID: item.event_id,
-      item: {
-        title: item.title,
-        start: item.start_time,
-        end: item.end_time,
-        notes: item.notes,
-        needed: item.needed,
-      },
+      event,
+      item,
     });
   }
 );
@@ -494,7 +488,7 @@ app.post(
       item: item,
       count: quantity,
       comment: comment,
-      event: req.body.event,
+      event: event,
     });
   }
 );
@@ -520,7 +514,7 @@ app.delete(
 
     let signup = await getSignup(req.body.signup);
     if (signup && signup.user_id == userID) {
-      deleteSignup(signup.id);
+      cancelSignup(signup.id);
 
       sendCancellation(signup);
       return res.status(200).json({ success: true });

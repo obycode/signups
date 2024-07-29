@@ -13,7 +13,7 @@ html
           .event
             p
               img(src=event.image, alt=event.title)
-            p #{event.description}
+            p !{event.description}
             hr
             for item in items
               .row
