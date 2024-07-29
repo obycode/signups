@@ -250,7 +250,7 @@ async function getItemsForEvent(event_id) {
         LEFT JOIN signups ON items.id = signups.item_id AND signups.canceled_at IS NULL
         WHERE event_id = $1
         GROUP BY items.id
-        ORDER BY signups ASC
+        ORDER BY COALESCE(items.start_time, items.end_time), signups ASC;
       `,
       [event_id]
     );
@@ -353,6 +353,7 @@ async function getActiveSignupsForUser(user_id) {
         JOIN items ON signups.item_id = items.id
         JOIN events ON items.event_id = events.id
         WHERE user_id = $1 AND events.active = true AND signups.canceled_at IS NULL
+        ORDER BY COALESCE(items.start_time, items.end_time)
       `,
       [user_id]
     );
@@ -374,6 +375,7 @@ async function getInactiveSignupsForUser(user_id) {
         JOIN items ON signups.item_id = items.id
         JOIN events ON items.event_id = events.id
         WHERE user_id = $1 AND events.active = false AND signups.canceled_at IS NULL
+        ORDER BY COALESCE(items.start_time, items.end_time)
       `,
       [user_id]
     );
