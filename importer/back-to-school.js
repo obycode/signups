@@ -10,7 +10,7 @@ Airtable.configure({
 const signupBase = Airtable.base(process.env.AIRTABLE_BASE);
 
 const sourceBase = Airtable.base("appWT0Yk9UfeIQhN4");
-const signupEvent = 8;
+const signupEvent = 11;
 
 dbInit();
 

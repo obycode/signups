@@ -247,7 +247,7 @@ async function getItemsForEvent(event_id) {
       `
         SELECT items.*, COUNT(signups.id) AS signups
         FROM items
-        LEFT JOIN signups ON items.id = signups.item_id
+        LEFT JOIN signups ON items.id = signups.item_id AND signups.canceled_at IS NULL
         WHERE event_id = $1
         GROUP BY items.id
         ORDER BY signups ASC
