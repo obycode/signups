@@ -72,7 +72,10 @@ function isLoggedIn(req, res) {
 }
 
 async function sendMagicLink(email, userID, code, item) {
-  let link = `${process.env.BASE_URL}/magic?user=${userID}&code=${code}&item=${item}`;
+  let link = `${process.env.BASE_URL}/magic?user=${userID}&code=${code}`;
+  if (item) {
+    link += `&item=${item}`;
+  }
   console.log(`Sending magic link: user=${userID}, item=${item}`);
   let emailBody = pug.renderFile("views/e4l-mail.pug", {
     title: "Empower4Life Signups",
@@ -378,7 +381,7 @@ app.post(
 
     // If an account already exists for this email, just send the magic code email
     if (user) {
-      console.log("Sending magic link for existing user");
+      console.log("Sending magic link for existing user", user);
       sendMagicLink(req.body["email"], user.id, user.magic_code, req.body.item);
 
       return res.render("link-sent");
