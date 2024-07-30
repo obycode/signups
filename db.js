@@ -442,7 +442,7 @@ async function getSignupsForEvent(event_id) {
   try {
     const result = await pool.query(
       `
-        SELECT items.title AS item_title, users.name AS user_name, users.email, signups.quantity, items.notes
+        SELECT items.title AS item_title, users.name AS user_name, users.email, signups.quantity, signups.comment
         FROM signups
         JOIN items ON signups.item_id = items.id
         JOIN events ON items.event_id = events.id
