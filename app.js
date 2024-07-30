@@ -308,7 +308,7 @@ app.get("/signout", async (req, res) => {
   res.render("login");
 });
 
-app.get("/login", [check("item").trim().escape()], async (req, res) => {
+app.get("/login", [check("item").optional().isInt()], async (req, res) => {
   res.render("login", { item: req.query.item });
 });
 
@@ -316,7 +316,7 @@ app.post(
   "/login",
   [
     check("email", "Missing or invalid email").isEmail(),
-    check("item").trim().escape(),
+    check("item").optional().isInt(),
   ],
   async (req, res) => {
     const errors = validationResult(req);
@@ -344,7 +344,7 @@ app.post(
   }
 );
 
-app.get("/register", [check("item").trim().escape()], async (req, res) => {
+app.get("/register", [check("item").optional().isInt()], async (req, res) => {
   res.render("register", { item: req.query.item });
 });
 
@@ -356,7 +356,7 @@ app.post(
     check("phone", "Invalid phone number")
       .isMobilePhone()
       .optional({ nullable: true, checkFalsy: true }),
-    check("item").trim().escape(),
+    check("item").optional().isInt(),
   ],
   async (req, res) => {
     const errors = validationResult(req);
