@@ -377,7 +377,7 @@ app.post(
     }
 
     // First check if this user already exists
-    let user = getUserByEmail(req.body.email);
+    let user = await getUserByEmail(req.body.email);
 
     // If an account already exists for this email, just send the magic code email
     if (user) {
