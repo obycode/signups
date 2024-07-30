@@ -271,7 +271,7 @@ app.get(
   [
     check("user", "invalid user").isInt(),
     check("code", "invalid code").trim().escape(),
-    check("item").optional().isInt(),
+    check("item").optional({ checkFalsy: true }).isInt(),
   ],
   async (req, res) => {
     const errors = validationResult(req);
@@ -313,17 +313,22 @@ app.get("/signout", async (req, res) => {
   res.render("login");
 });
 
-app.get("/login", [check("item").optional().isInt()], async (req, res) => {
-  res.render("login", { item: req.query.item });
-});
+app.get(
+  "/login",
+  [check("item").optional({ checkFalsy: true }).isInt()],
+  async (req, res) => {
+    res.render("login", { item: req.query.item });
+  }
+);
 
 app.post(
   "/login",
   [
     check("email", "Missing or invalid email").isEmail(),
-    check("item").optional().isInt(),
+    check("item").optional({ checkFalsy: true }).isInt(),
   ],
   async (req, res) => {
+    console.log("Loggin in", req.body);
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       var data = {
@@ -350,9 +355,13 @@ app.post(
   }
 );
 
-app.get("/register", [check("item").optional().isInt()], async (req, res) => {
-  res.render("register", { item: req.query.item });
-});
+app.get(
+  "/register",
+  [check("item").optional({ checkFalsy: true }).isInt()],
+  async (req, res) => {
+    res.render("register", { item: req.query.item });
+  }
+);
 
 app.post(
   "/register",
@@ -362,7 +371,7 @@ app.post(
     check("phone", "Invalid phone number")
       .isMobilePhone()
       .optional({ nullable: true, checkFalsy: true }),
-    check("item").optional().isInt(),
+    check("item").optional({ checkFalsy: true }).isInt(),
   ],
   async (req, res) => {
     const errors = validationResult(req);
