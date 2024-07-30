@@ -19,7 +19,7 @@ async function ensureEventsTable(client) {
         email_info TEXT,
         image TEXT,
         active BOOLEAN
-    );
+      );
     `);
     console.log("Created 'events' table.");
   }
@@ -42,7 +42,7 @@ async function ensureItemsTable(client) {
         start_time TIMESTAMP,
         end_time TIMESTAMP,
         needed INTEGER
-    );
+      );
     `);
     console.log("Created 'items' table.");
   }
@@ -62,7 +62,7 @@ async function ensureUsersTable(client) {
         email TEXT,
         phone TEXT,
         magic_code TEXT
-    );
+      );
     `);
     console.log("Created 'users' table.");
   }
@@ -84,7 +84,7 @@ async function ensureSignupsTable(client) {
         comment TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         canceled_at TIMESTAMP
-    );
+      );
     `);
     console.log("Created 'signups' table.");
   }
@@ -110,7 +110,23 @@ async function ensureKidsTable(client) {
         color TEXT,
         comments TEXT,
         internal TEXT
-    );
+      );
+    `);
+    console.log("Created 'kids' table.");
+  }
+}
+
+async function ensureAdminTable(client) {
+  const exists = await client.query(`SELECT EXISTS (
+    SELECT FROM information_schema.tables
+    WHERE table_name = 'admin'
+  );`);
+
+  if (!exists.rows[0].exists) {
+    await client.query(`
+      CREATE TABLE admin (
+        user_id INTEGER PRIMARY KEY
+      );
     `);
     console.log("Created 'kids' table.");
   }
@@ -134,6 +150,7 @@ async function init() {
     ensureUsersTable(client);
     ensureSignupsTable(client);
     ensureKidsTable(client);
+    ensureAdminTable(client);
   } catch (err) {
     console.error("Error initializing tables:", err);
   } finally {
@@ -421,6 +438,26 @@ async function cancelSignup(signup_id) {
   }
 }
 
+async function getSignupsForEvent(event_id) {
+  try {
+    const result = await pool.query(
+      `
+        SELECT items.title AS item_title, users.name AS user_name, users.email, signups.quantity, items.notes
+        FROM signups
+        JOIN items ON signups.item_id = items.id
+        JOIN events ON items.event_id = events.id
+        JOIN users ON signups.user_id = users.id
+        WHERE events.id = $1 AND signups.canceled_at IS NULL
+        ORDER BY COALESCE(items.start_time, items.end_time);
+      `,
+      [event_id]
+    );
+    return result.rows;
+  } catch (err) {
+    console.error(err);
+    return [];
+  }
+}
 
 // KIDS
 
@@ -467,6 +504,25 @@ async function getKid(kid_id) {
   }
 }
 
+// ADMIN
+
+async function isAdmin(user_id) {
+  try {
+    const result = await pool.query(
+      `
+        SELECT * FROM admin
+        WHERE user_id = $1
+      `,
+      [user_id]
+    );
+
+    return result.rows.length > 0;
+  } catch (err) {
+    console.error(err);
+    return false;
+  }
+}
+
 module.exports = {
   init,
   createEvent,
@@ -484,6 +540,8 @@ module.exports = {
   getInactiveSignupsForUser,
   getSignup,
   cancelSignup,
+  getSignupsForEvent,
   createKid,
   getKid,
+  isAdmin,
 };

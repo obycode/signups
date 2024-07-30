@@ -21,10 +21,12 @@ const {
   getUserByEmail,
   getItemsForEvent,
   getEvent,
+  getSignupsForEvent,
   getItem,
   createSignup,
   getSignup,
   cancelSignup,
+  isAdmin,
 } = require("./db");
 
 let neon = new neoncrm.Client(
@@ -537,6 +539,31 @@ app.delete(
     }
   }
 );
+
+app.get("/admin/events/:id", async (req, res) => {
+  let userID = isLoggedIn(req, res);
+  if (!userID) {
+    return res.redirect("/login");
+  }
+
+  let admin = await isAdmin(userID);
+  if (!admin) {
+    return res.redirect("/");
+  }
+
+  let event = await getEvent(req.params.id);
+  if (!event) {
+    return res.redirect("/");
+  }
+
+  let items = await getSignupsForEvent(event.id);
+
+  return res.render("admin-event", {
+    loggedIn: userID,
+    event,
+    items,
+  });
+});
 
 const server = app.listen(process.env.PORT, "0.0.0.0", () => {
   console.log(

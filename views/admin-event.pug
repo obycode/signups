@@ -1,0 +1,34 @@
+html
+  head
+    title Empower4Life Signups
+    meta(charset="utf-8")
+    meta(name="viewport" content="width=device-width, initial-scale=1, user-scalable=no")
+    link(rel="stylesheet" href="/assets/css/main.css")
+  body(class="landing is-preload")
+    - var title = 'Admin';
+    include header
+    .outer-main
+      main
+        section(class="Main-content")
+          h2 #{event.title}
+        section(class="event-details")
+          if items.length
+            table
+              thead
+                tr
+                  th Item Title
+                  th User Name
+                  th Email
+                  th Quantity
+                  th Notes
+              tbody
+                each item in items
+                  tr
+                    td #{item.item_title}
+                    td #{item.user_name}
+                    td #{item.email}
+                    td #{item.quantity}
+                    td #{item.notes}
+          else
+            p No signups for this event.
+    include footer

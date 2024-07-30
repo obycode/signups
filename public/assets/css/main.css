@@ -739,6 +739,38 @@ p.button-p {
   font-weight: bold;
 }
 
+.event-details h2 {
+  text-align: center;
+  color: #333;
+}
+
+.event-details table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+.event-details table th,
+.event-details table td {
+  padding: 10px;
+  border: 1px solid #ddd;
+  text-align: left;
+}
+
+.event-details table th {
+  background-color: #f4f4f4;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.event-details table tbody tr:nth-child(odd) {
+  background-color: #f9f9f9;
+}
+
+.event-details table tbody tr:nth-child(even) {
+  background-color: #fff;
+}
+
 /* Add media queries for responsiveness - when the screen is 500px wide or less, stack the links on top of each other */
 @media screen and (max-width: 767px) {
   .title {
