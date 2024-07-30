@@ -16,6 +16,7 @@ const {
   getActiveSignupsForUser,
   getInactiveSignupsForUser,
   getMagicCodeForUser,
+  createUser,
   getUser,
   getUserByEmail,
   getItemsForEvent,
