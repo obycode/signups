@@ -264,9 +264,9 @@ app.get("/user", async (req, res) => {
 app.get(
   "/magic",
   [
-    check("user", "invalid user").trim().escape(),
+    check("user", "invalid user").isInt(),
     check("code", "invalid code").trim().escape(),
-    check("item").trim().escape(),
+    check("item").optional().isInt(),
   ],
   async (req, res) => {
     const errors = validationResult(req);
