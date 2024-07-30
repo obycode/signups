@@ -328,7 +328,6 @@ app.post(
     check("item").optional({ checkFalsy: true }).isInt(),
   ],
   async (req, res) => {
-    console.log("Loggin in", req.body);
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       var data = {
@@ -348,7 +347,6 @@ app.post(
         ],
       });
     }
-    console.log("Sending magic link from login page");
     sendMagicLink(req.body["email"], user.id, user.magic_code, req.body.item);
 
     res.render("link-sent");
@@ -391,7 +389,6 @@ app.post(
 
     // If an account already exists for this email, just send the magic code email
     if (user) {
-      console.log("Sending magic link for existing user", user);
       sendMagicLink(req.body["email"], user.id, user.magic_code, req.body.item);
 
       return res.render("link-sent");
@@ -406,7 +403,6 @@ app.post(
       magic_code: magicCode,
     });
 
-    console.log("Sending magic link for new user");
     sendMagicLink(req.body["email"], user_id, magicCode, req.body.item);
 
     res.render("link-sent");
