@@ -411,12 +411,13 @@ app.post(
   }
 );
 
-async function renderEvent(userID, event, res) {
+async function renderEvent(userID, admin, event, res) {
   let items = await getItemsForEvent(event.id);
   items = items.map(setTimes);
 
   return res.render("event", {
     loggedIn: userID,
+    isAdmin: admin,
     event,
     items,
   });
@@ -424,13 +425,14 @@ async function renderEvent(userID, event, res) {
 
 app.get("/event/:eventID", async (req, res) => {
   let userID = isLoggedIn(req, res);
+  let admin = await isAdmin(userID);
 
   let event = await getEvent(req.params.eventID);
   if (!event) {
     return res.redirect("/");
   }
 
-  return await renderEvent(userID, event, res);
+  return await renderEvent(userID, admin, event, res);
 });
 
 app.get(
@@ -540,7 +542,7 @@ app.delete(
   }
 );
 
-app.get("/admin/events/:id", async (req, res) => {
+app.get("/admin/event/:id", async (req, res) => {
   let userID = isLoggedIn(req, res);
   if (!userID) {
     return res.redirect("/login");

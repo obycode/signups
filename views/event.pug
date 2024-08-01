@@ -38,4 +38,7 @@ html
                   else
                     span.slots Needs Met!
               hr
+          .title
+            if isAdmin
+              a(href="/admin/event/" + event.id) Admin
       include footer
