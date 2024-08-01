@@ -80,7 +80,10 @@ async function addChildrenToEvent(children) {
       email_info,
       needed: 1,
     };
-    createItem(item);
+
+    if (!process.env.DRY_RUN) {
+      createItem(item);
+    }
   }
 }
 
@@ -109,7 +112,9 @@ async function main() {
   for (let i = 0; i < children.length; i += 10) {
     let batch = children.slice(i, i + 10);
     await addChildrenToEvent(batch);
-    await markChildrenAsAdded(batch);
+    if (!process.env.DRY_RUN) {
+      await markChildrenAsAdded(batch);
+    }
   }
 }
 
