@@ -24,7 +24,15 @@ html
               tbody
                 each item in items
                   tr
-                    td #{item.item_title}
+                    td
+                      p
+                        | #{item.item_title}
+                        if item.start && item.end
+                          br
+                          span.time #{item.start} - #{item.end}
+                        else if item.end
+                          br
+                          span.time Deadline: #{item.end}
                     td #{item.user_name}
                     td #{item.email}
                     td #{item.quantity}

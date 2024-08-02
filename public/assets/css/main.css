@@ -771,6 +771,11 @@ p.button-p {
   background-color: #fff;
 }
 
+p .time {
+  font-size: 12px;
+  font-style: italic;
+}
+
 /* Add media queries for responsiveness - when the screen is 500px wide or less, stack the links on top of each other */
 @media screen and (max-width: 767px) {
   .title {

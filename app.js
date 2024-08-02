@@ -559,6 +559,7 @@ app.get("/admin/event/:id", async (req, res) => {
   }
 
   let items = await getSignupsForEvent(event.id);
+  items = items.map(setTimes);
 
   return res.render("admin-event", {
     loggedIn: userID,
