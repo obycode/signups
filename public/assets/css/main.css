@@ -776,6 +776,64 @@ p .time {
   font-style: italic;
 }
 
+form.signup {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: block;
+}
+
+.form-group {
+  display: block;
+  width: 100%;
+  margin-bottom: 15px;
+  clear: both;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.form-control {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.form-center {
+  text-align: center;
+  margin-top: 20px;
+}
+
+/* Error message styling */
+.errors {
+  margin-bottom: 20px;
+  padding: 10px;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 4px;
+  color: #721c24;
+}
+
+.errors ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.errors li {
+  margin-bottom: 5px;
+}
+
 /* Add media queries for responsiveness - when the screen is 500px wide or less, stack the links on top of each other */
 @media screen and (max-width: 767px) {
   .title {

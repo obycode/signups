@@ -165,12 +165,13 @@ async function init() {
 async function createEvent(event) {
   const result = await pool.query(
     `
-    INSERT INTO events (title, description, email_info, image, active)
-    VALUES ($1, $2, $3, $4, $5)
+    INSERT INTO events (title, summary, description, email_info, image, active)
+    VALUES ($1, $2, $3, $4, $5, $6)
     RETURNING id
   `,
     [
       event.title,
+      event.summary,
       event.description,
       event.email_info,
       event.image,

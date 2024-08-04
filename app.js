@@ -10,6 +10,21 @@ const neoncrm = require("@obycode/neoncrm");
 var cookieParser = require("cookie-parser");
 const jwt = require("jsonwebtoken");
 const { v4: uuidv4 } = require("uuid");
+const path = require("path");
+const multer = require("multer");
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
+const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
+const { Upload } = require("@aws-sdk/lib-storage");
+
+const s3 = new S3Client({
+  region: process.env.AWS_REGION,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  },
+});
+
 const {
   init: dbInit,
   getActiveEvents,
@@ -20,6 +35,7 @@ const {
   getUser,
   getUserByEmail,
   getItemsForEvent,
+  createEvent,
   getEvent,
   getSignupsForEvent,
   getItem,
@@ -539,6 +555,101 @@ app.delete(
       console.log("Error deleting signup: Invalid user ID");
       return res.status(401).json({ error: "Invalid user ID" });
     }
+  }
+);
+
+app.get("/admin/event/new", async (req, res) => {
+  let userID = isLoggedIn(req, res);
+  if (!userID) {
+    return res.redirect("/login");
+  }
+
+  let admin = await isAdmin(userID);
+  if (!admin) {
+    return res.redirect("/");
+  }
+
+  return res.render("new-event", {
+    loggedIn: userID,
+  });
+});
+
+app.post(
+  "/admin/event",
+  upload.single("image"),
+  [
+    check("title", "Title is required").trim().notEmpty(),
+    check("description", "Description is required").trim().notEmpty(),
+    check("summary", "Summary is required").trim(),
+    check("email_info").trim(),
+  ],
+  async (req, res) => {
+    let userID = isLoggedIn(req, res);
+    if (!userID) {
+      return res.redirect("/login");
+    }
+
+    let admin = await isAdmin(userID);
+    if (!admin) {
+      return res.redirect("/");
+    }
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.render("new-event", {
+        loggedIn: userID,
+        errors: errors.array(),
+      });
+    }
+
+    const event = {
+      title: req.body.title,
+      description: req.body.description,
+      summary: req.body.summary,
+      email_info: req.body.email_info,
+      active: false,
+    };
+
+    if (req.file) {
+      const fileContent = req.file.buffer;
+      const fileExtension = path.extname(req.file.originalname);
+      const fileName = `${uuidv4()}${fileExtension}`;
+
+      const params = {
+        Bucket: process.env.AWS_S3_BUCKET_NAME,
+        Key: fileName,
+        Body: fileContent,
+        ContentType: req.file.mimetype,
+      };
+
+      try {
+        const upload = new Upload({
+          client: s3,
+          params: params,
+        });
+
+        const data = await upload.done();
+        event.image = `https://${params.Bucket}.s3.${process.env.AWS_REGION}.amazonaws.com/${params.Key}`;
+      } catch (error) {
+        console.error("Error uploading image to S3:", error);
+        return res.status(500).render("new-event", {
+          loggedIn: userID,
+          errors: [{ msg: "Error uploading image" }],
+        });
+      }
+    }
+
+    const newEvent = await createEvent(event);
+    if (!newEvent) {
+      return res.render("new-event", {
+        loggedIn: userID,
+        errors: [{ msg: "Failed to create event" }],
+      });
+    }
+
+    console.log("Created new event:", newEvent);
+
+    return res.redirect(`/admin/event/${newEvent}`);
   }
 );
 
