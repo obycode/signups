@@ -12,6 +12,28 @@ html
         section(class="Main-content")
           h2 #{event.title}
         section(class="event-details")
+          if Object.keys(summary).length
+            h3 Summary
+            table
+              thead
+                tr
+                  th Item Title
+                  th Needed
+                  th Signups
+              tbody
+                each item in summary
+                  tr
+                    td
+                      p
+                        | #{item.title}
+                        if item.start && item.end
+                          br
+                          span.time #{item.start} - #{item.end}
+                        else if item.end
+                          br
+                          span.time Deadline: #{item.end}
+                    td #{item.needed}
+                    td #{item.signups}
           if items.length
             table
               thead

@@ -558,13 +558,34 @@ app.get("/admin/event/:id", async (req, res) => {
     return res.redirect("/");
   }
 
-  let items = await getSignupsForEvent(event.id);
+  let signups = await getSignupsForEvent(event.id);
+  signups = signups.map(setTimes);
+
+  let items = await getItemsForEvent(event.id);
   items = items.map(setTimes);
+
+  // Collect a summary of the number of signups for each item
+  let summary = {};
+  if (items.length < 10) {
+    items.forEach((item) => {
+      summary[item.id] = {
+        signups: 0,
+        needed: item.needed,
+        title: item.title,
+        start: item.start,
+        end: item.end,
+      };
+    });
+    signups.forEach((item) => {
+      summary[item.item_id].signups += item.quantity;
+    });
+  }
 
   return res.render("admin-event", {
     loggedIn: userID,
     event,
-    items,
+    items: signups,
+    summary,
   });
 });
 
