@@ -43,6 +43,9 @@ const {
   getSignup,
   cancelSignup,
   isAdmin,
+  createItem,
+  updateItem,
+  deleteItem,
 } = require("./db");
 
 let neon = new neoncrm.Client(
@@ -653,6 +656,238 @@ app.post(
   }
 );
 
+app.get(
+  "/admin/item/new",
+  [check("event", "Missing event ID").isInt().notEmpty()],
+  async (req, res) => {
+    let userID = isLoggedIn(req, res);
+    if (!userID) {
+      return res.redirect("/login");
+    }
+
+    let admin = await isAdmin(userID);
+    if (!admin) {
+      return res.redirect("/");
+    }
+
+    return res.render("new-item", {
+      loggedIn: userID,
+      event: req.query.event,
+    });
+  }
+);
+
+app.post(
+  "/admin/item",
+  [
+    check("title", "Title is required").trim().notEmpty(),
+    check("event", "Event ID is required").isInt().notEmpty(),
+    check("needed", "Needed is required").isInt().notEmpty(),
+    check("notes").trim(),
+    check("email_info").trim(),
+    check("start", "Start time must be valid date")
+      .optional({
+        nullable: true,
+        checkFalsy: true,
+      })
+      .isISO8601(),
+    check("end", "End time must be valid date")
+      .optional({
+        nullable: true,
+        checkFalsy: true,
+      })
+      .isISO8601(),
+  ],
+  async (req, res) => {
+    let userID = isLoggedIn(req, res);
+    if (!userID) {
+      return res.redirect("/login");
+    }
+
+    let admin = await isAdmin(userID);
+    if (!admin) {
+      return res.redirect("/");
+    }
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.render("new-item", {
+        loggedIn: userID,
+        errors: errors.array(),
+        event: req.body.event,
+        item_title: req.body.title,
+        notes: req.body.notes,
+        email_info: req.body.email_info,
+        start: req.body.start,
+        end: req.body.end,
+        needed: req.body.needed,
+      });
+    }
+
+    const item = {
+      event_id: req.body.event,
+      title: req.body.title,
+      notes: req.body.notes,
+      email_info: req.body.email_info,
+      start_time: req.body.start_time,
+      end_time: req.body.end_time,
+      needed: req.body.needed,
+    };
+
+    const newItem = await createItem(item);
+    if (!newItem) {
+      return res.render("new-item", {
+        loggedIn: userID,
+        errors: [{ msg: "Failed to create item" }],
+      });
+    }
+
+    console.log(`Created new item ${newItem} for event ${item.event_id}`);
+
+    return res.redirect(`/admin/event/${req.body.event}`);
+  }
+);
+
+app.get(
+  "/admin/item/edit",
+  [
+    check("item", "Missing item ID").isInt().notEmpty(),
+    check("event", "Missing event ID").isInt().notEmpty(),
+  ],
+  async (req, res) => {
+    let userID = isLoggedIn(req, res);
+    if (!userID) {
+      return res.redirect("/login");
+    }
+
+    let admin = await isAdmin(userID);
+    if (!admin) {
+      return res.redirect("/");
+    }
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.redirect("/admin/event/" + req.query.event);
+    }
+
+    let item = await getItem(req.query.item);
+    console.log(item);
+    if (!item) {
+      return res.redirect("/admin/item/new?event=" + req.query.event);
+    }
+
+    return res.render("edit-item", {
+      loggedIn: userID,
+      id: req.query.item,
+      event: req.query.event,
+      item_title: item.title,
+      notes: item.notes,
+      email_info: item.email_info,
+      start: item.start_time,
+      end: item.end_time,
+      needed: item.needed,
+    });
+  }
+);
+
+app.post(
+  "/admin/item-edit",
+  [
+    check("id", "ID is required").isInt().notEmpty(),
+    check("event", "Event ID is required").isInt().notEmpty(),
+    check("title", "Title is required").trim().notEmpty(),
+    check("needed", "Needed is required").isInt().notEmpty(),
+    check("notes").trim(),
+    check("email_info").trim(),
+    check("start", "Start time must be valid date")
+      .optional({
+        nullable: true,
+        checkFalsy: true,
+      })
+      .isISO8601(),
+    check("end", "End time must be valid date")
+      .optional({
+        nullable: true,
+        checkFalsy: true,
+      })
+      .isISO8601(),
+  ],
+  async (req, res) => {
+    console.log("IN PUT");
+    let userID = isLoggedIn(req, res);
+    if (!userID) {
+      return res.redirect("/login");
+    }
+
+    let admin = await isAdmin(userID);
+    if (!admin) {
+      return res.redirect("/");
+    }
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.render("edit-item", {
+        loggedIn: userID,
+        errors: errors.array(),
+        id: req.body.id,
+        event: req.body.event,
+        title: req.body.title,
+        notes: req.body.notes,
+        email_info: req.body.email_info,
+        start: req.body.start,
+        end: req.body.end,
+        needed: req.body.needed,
+      });
+    }
+
+    const item = {
+      event_id: req.body.event,
+      title: req.body.title,
+      notes: req.body.notes,
+      email_info: req.body.email_info,
+      start_time: req.body.start_time,
+      end_time: req.body.end_time,
+      needed: req.body.needed,
+    };
+
+    await updateItem(req.body.id, item);
+
+    console.log(`Edited item ${req.body.id} for event ${item.event_id}`);
+
+    return res.redirect(`/admin/event/${req.body.event}`);
+  }
+);
+
+app.get(
+  "/admin/item/delete",
+  [
+    check("item", "Missing item ID").isInt().notEmpty(),
+    check("event", "Missing event ID").isInt().notEmpty(),
+  ],
+  async (req, res) => {
+    let userID = isLoggedIn(req, res);
+    if (!userID) {
+      return res.redirect("/login");
+    }
+
+    let admin = await isAdmin(userID);
+    if (!admin) {
+      return res.redirect("/");
+    }
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.redirect("/admin/event/" + req.query.event);
+    }
+
+    await deleteItem(req.query.item);
+
+    console.log(`Deleted item ${req.query.item}`);
+
+    return res.redirect(`/admin/event/${req.query.event}`);
+  }
+);
+
 app.get("/admin/event/:id", async (req, res) => {
   let userID = isLoggedIn(req, res);
   if (!userID) {
@@ -677,7 +912,7 @@ app.get("/admin/event/:id", async (req, res) => {
 
   // Collect a summary of the number of signups for each item
   let summary = {};
-  if (items.length < 10) {
+  if (items.length < 20) {
     items.forEach((item) => {
       summary[item.id] = {
         signups: 0,

@@ -238,6 +238,35 @@ async function createItem(item) {
   return result.rows[0].id;
 }
 
+async function updateItem(item_id, item) {
+  await pool.query(
+    `
+    UPDATE items
+    SET title = $1, notes = $2, email_info = $3, start_time = $4, end_time = $5, needed = $6
+    WHERE id = $7
+  `,
+    [
+      item.title,
+      item.notes,
+      item.email_info,
+      item.start_time,
+      item.end_time,
+      item.needed,
+      item_id,
+    ]
+  );
+}
+
+async function deleteItem(item_id) {
+  await pool.query(
+    `
+    DELETE FROM items
+    WHERE id = $1
+  `,
+    [item_id]
+  );
+}
+
 async function getItem(item_id) {
   try {
     const result = await pool.query(
@@ -532,6 +561,8 @@ module.exports = {
   createEvent,
   getActiveEvents,
   createItem,
+  updateItem,
+  deleteItem,
   getItem,
   getEvent,
   getItemsForEvent,
