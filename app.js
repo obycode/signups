@@ -771,7 +771,6 @@ app.get(
     }
 
     let item = await getItem(req.query.item);
-    console.log(item);
     if (!item) {
       return res.redirect("/admin/item/new?event=" + req.query.event);
     }
@@ -813,7 +812,6 @@ app.post(
       .isISO8601(),
   ],
   async (req, res) => {
-    console.log("IN PUT");
     let userID = isLoggedIn(req, res);
     if (!userID) {
       return res.redirect("/login");
