@@ -37,6 +37,8 @@ const {
   getItemsForEvent,
   createEvent,
   getEvent,
+  updateEvent,
+  deleteEvent,
   getSignupsForEvent,
   getItem,
   createSignup,
@@ -685,8 +687,120 @@ app.post(
 );
 
 app.get(
+  "/admin/event/edit",
+  [check("event", "Missing event ID").isInt()],
+  async (req, res) => {
+    let userID = isLoggedIn(req, res);
+    if (!userID) {
+      return res.redirect("/login");
+    }
+
+    let admin = await isAdmin(userID);
+    if (!admin) {
+      return res.redirect("/");
+    }
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.redirect("/admin/event/" + req.query.event);
+    }
+
+    let event = await getEvent(req.query.event);
+    if (!event) {
+      return res.redirect("/admin");
+    }
+
+    return res.render("edit-event", {
+      loggedIn: userID,
+      event,
+    });
+  }
+);
+
+app.post(
+  "/admin/event-edit",
+  upload.single("image"),
+  [
+    check("title", "Title is required").trim().notEmpty(),
+    check("description", "Description is required").trim().notEmpty(),
+    check("summary").trim(),
+    check("email_info").trim(),
+  ],
+  async (req, res) => {
+    let userID = isLoggedIn(req, res);
+    if (!userID) {
+      return res.redirect("/login");
+    }
+
+    let admin = await isAdmin(userID);
+    if (!admin) {
+      return res.redirect("/");
+    }
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      const event = {
+        title: req.body.title,
+        description: req.body.description,
+        summary: req.body.summary,
+        email_info: req.body.email_info,
+        active: req.body.active,
+      };
+      return res.render("edit-event", {
+        loggedIn: userID,
+        errors: errors.array(),
+        event,
+      });
+    }
+
+    const event = {
+      title: req.body.title,
+      description: req.body.description,
+      summary: req.body.summary,
+      email_info: req.body.email_info,
+      active: req.body.active == "on",
+    };
+
+    if (req.file) {
+      const fileContent = req.file.buffer;
+      const fileExtension = path.extname(req.file.originalname);
+      const fileName = `${uuidv4()}${fileExtension}`;
+
+      const params = {
+        Bucket: process.env.AWS_S3_BUCKET_NAME,
+        Key: fileName,
+        Body: fileContent,
+        ContentType: req.file.mimetype,
+      };
+
+      try {
+        const upload = new Upload({
+          client: s3,
+          params: params,
+        });
+
+        const data = await upload.done();
+        event.image = `https://${params.Bucket}.s3.${process.env.AWS_REGION}.amazonaws.com/${params.Key}`;
+      } catch (error) {
+        console.error("Error uploading image to S3:", error);
+        return res.status(500).render("new-event", {
+          loggedIn: userID,
+          errors: [{ msg: "Error uploading image" }],
+        });
+      }
+    }
+
+    await updateEvent(req.body.id, event);
+
+    console.log(`Edited event ${req.body.id}`);
+
+    return res.redirect(`/admin/event/${req.body.id}`);
+  }
+);
+
+app.get(
   "/admin/item/new",
-  [check("event", "Missing event ID").isInt().notEmpty()],
+  [check("event", "Missing event ID").isInt()],
   async (req, res) => {
     let userID = isLoggedIn(req, res);
     if (!userID) {
@@ -709,8 +823,8 @@ app.post(
   "/admin/item",
   [
     check("title", "Title is required").trim().notEmpty(),
-    check("event", "Event ID is required").isInt().notEmpty(),
-    check("needed", "Needed is required").isInt().notEmpty(),
+    check("event", "Event ID is required").isInt(),
+    check("needed", "Needed is required").isInt(),
     check("notes").trim(),
     check("email_info").trim(),
     check("start", "Start time must be valid date")
@@ -779,8 +893,8 @@ app.post(
 app.get(
   "/admin/item/edit",
   [
-    check("item", "Missing item ID").isInt().notEmpty(),
-    check("event", "Missing event ID").isInt().notEmpty(),
+    check("item", "Missing item ID").isInt(),
+    check("event", "Missing event ID").isInt(),
   ],
   async (req, res) => {
     let userID = isLoggedIn(req, res);
@@ -815,10 +929,10 @@ app.get(
 app.post(
   "/admin/item-edit",
   [
-    check("id", "ID is required").isInt().notEmpty(),
-    check("event", "Event ID is required").isInt().notEmpty(),
+    check("id", "ID is required").isInt(),
+    check("event", "Event ID is required").isInt(),
     check("title", "Title is required").trim().notEmpty(),
-    check("needed", "Needed is required").isInt().notEmpty(),
+    check("needed", "Needed is required").isInt(),
     check("notes").trim(),
     check("email_info").trim(),
     check("start", "Start time must be valid date")
@@ -847,17 +961,20 @@ app.post(
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.render("edit-item", {
-        loggedIn: userID,
-        errors: errors.array(),
+      const item = {
         id: req.body.id,
-        event: req.body.event,
+        event_id: req.body.event,
         title: req.body.title,
         notes: req.body.notes,
         email_info: req.body.email_info,
-        start: req.body.start,
-        end: req.body.end,
+        start_form: req.body.start,
+        end_form: req.body.end,
         needed: req.body.needed,
+      };
+      return res.render("edit-item", {
+        loggedIn: userID,
+        errors: errors.array(),
+        item,
       });
     }
 
@@ -882,8 +999,8 @@ app.post(
 app.get(
   "/admin/item/delete",
   [
-    check("item", "Missing item ID").isInt().notEmpty(),
-    check("event", "Missing event ID").isInt().notEmpty(),
+    check("item", "Missing item ID").isInt(),
+    check("event", "Missing event ID").isInt(),
   ],
   async (req, res) => {
     let userID = isLoggedIn(req, res);

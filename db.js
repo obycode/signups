@@ -216,6 +216,47 @@ async function getActiveEvents() {
   }
 }
 
+async function updateEvent(event_id, event) {
+  const query = `
+    UPDATE events
+    SET title = $1, summary = $2, description = $3, email_info = $4, ${
+      event.image ? "image = $5," : ""
+    } active = ${event.image ? "$6" : "$5"}
+    WHERE id = ${event.image ? "$7" : "$6"}
+  `;
+
+  const values = event.image
+    ? [
+        event.title,
+        event.summary,
+        event.description,
+        event.email_info,
+        event.image,
+        event.active,
+        event_id,
+      ]
+    : [
+        event.title,
+        event.summary,
+        event.description,
+        event.email_info,
+        event.active,
+        event_id,
+      ];
+
+  await pool.query(query, values);
+}
+
+async function deleteEvent(event_id) {
+  await pool.query(
+    `
+    DELETE FROM events
+    WHERE id = $1
+  `,
+    [event_id]
+  );
+}
+
 // ITEMS
 
 async function createItem(item) {
@@ -566,6 +607,8 @@ module.exports = {
   getItem,
   getEvent,
   getItemsForEvent,
+  updateEvent,
+  deleteEvent,
   createUser,
   getUser,
   getUserByEmail,
