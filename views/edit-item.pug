@@ -1,0 +1,41 @@
+html
+  head
+    title Empower4Life Signups
+    meta(charset="utf-8")
+    meta(name="viewport" content="width=device-width, initial-scale=1, user-scalable=no")
+    link(rel="stylesheet" href="/assets/css/main.css")
+  body(class="landing is-preload")
+    - var title = 'Edit Item';
+    include header
+    .outer-main
+      main
+        section(class="Main-content")
+          if errors
+            .errors
+              ul
+              each error in errors
+                li #{error.msg}
+          form.signup(method="POST" action="/admin/item-edit")
+            .form-group
+              label(for='title') Title:
+              input#title.form-control(type='text' name='title' required value=item.title)
+            .form-group
+              label(for='notes') Notes (shows in event page):
+              input#notes.form-control(type='text' name='notes' required value=item.notes)
+            .form-group
+              label(for='email_info') Email Info (details only shown after signup confirmed):
+              textarea#email_info.form-control(name='email_info' cols='30' rows='4' value=item.email_info)
+            .form-group
+              label(for='start') Start Time:
+              input#start.form-control(type='datetime-local' name='start' value=item.start_form)
+            .form-group
+              label(for='end') End Time:
+              input#end.form-control(type='datetime-local' name='end' value=item.end_form)
+            .form-group
+              label(for='needed') Needed:
+              input#needed.form-control(type='number' name='needed' value=item.needed)
+            input#event.form-control(type='hidden' name='event' value=item.event_id)
+            input#id.form-control(type='hidden' name='id' value=item.id)
+            .center
+              button(type='submit' class='button-style button-style2') Update Item
+    include footer
