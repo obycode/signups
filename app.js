@@ -221,16 +221,44 @@ async function sendCancellation(signup) {
   }
 }
 
+function formatDateTimeForForm(date) {
+  const pad = (number) => number.toString().padStart(2, "0");
+
+  const year = date.getFullYear();
+  const month = pad(date.getMonth() + 1);
+  const day = pad(date.getDate());
+  const hours = pad(date.getHours());
+  const minutes = pad(date.getMinutes());
+
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
 function setTimes(record) {
   if (record.start_time) {
     const date = new Date(record.start_time);
     record.start = date.toLocaleString("en-US", {
       timeZone: "America/New_York",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
     });
+    record.start_form = formatDateTimeForForm(date);
   }
   if (record.end_time) {
     const date = new Date(record.end_time);
-    record.end = date.toLocaleString("en-US", { timeZone: "America/New_York" });
+    record.end = date.toLocaleString("en-US", {
+      timeZone: "America/New_York",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+    record.end_form = formatDateTimeForForm(date);
   }
   return record;
 }
@@ -729,8 +757,8 @@ app.post(
       title: req.body.title,
       notes: req.body.notes,
       email_info: req.body.email_info,
-      start_time: req.body.start_time,
-      end_time: req.body.end_time,
+      start_time: req.body.start,
+      end_time: req.body.end,
       needed: req.body.needed,
     };
 
@@ -775,16 +803,11 @@ app.get(
       return res.redirect("/admin/item/new?event=" + req.query.event);
     }
 
+    item = setTimes(item);
+
     return res.render("edit-item", {
       loggedIn: userID,
-      id: req.query.item,
-      event: req.query.event,
-      item_title: item.title,
-      notes: item.notes,
-      email_info: item.email_info,
-      start: item.start_time,
-      end: item.end_time,
-      needed: item.needed,
+      item,
     });
   }
 );
@@ -843,8 +866,8 @@ app.post(
       title: req.body.title,
       notes: req.body.notes,
       email_info: req.body.email_info,
-      start_time: req.body.start_time,
-      end_time: req.body.end_time,
+      start_time: req.body.start,
+      end_time: req.body.end,
       needed: req.body.needed,
     };
 

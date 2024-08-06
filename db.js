@@ -230,8 +230,8 @@ async function createItem(item) {
       item.title,
       item.notes,
       item.email_info,
-      item.start_time,
-      item.end_time,
+      item.start_time || null,
+      item.end_time || null,
       item.needed,
     ]
   );
@@ -249,8 +249,8 @@ async function updateItem(item_id, item) {
       item.title,
       item.notes,
       item.email_info,
-      item.start_time,
-      item.end_time,
+      item.start_time || null,
+      item.end_time || null,
       item.needed,
       item_id,
     ]
