@@ -21,10 +21,12 @@ html
               input#title.form-control(type='text' name='title' required value=item_title)
             .form-group
               label(for='notes') Notes (shows in event page):
-              input#notes.form-control(type='text' name='notes' required value=notes)
+              textarea#notes.form-control(name='notes' required cols='30' rows='12')
+                | #{notes}
             .form-group
               label(for='email_info') Email Info (details only shown after signup confirmed):
-              textarea#email_info.form-control(name='email_info' cols='30' rows='4' value=email_info)
+              textarea#email_info.form-control(name='email_info' cols='30' rows='12')
+                | #{email_info}
             .form-group
               label(for='start') Start Time:
               input#start.form-control(type='datetime-local' name='start' value=start)
