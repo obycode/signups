@@ -490,6 +490,7 @@ app.get(
   async (req, res) => {
     let userID = isLoggedIn(req, res);
     let item = await getItem(req.query.item);
+    item = setTimes(item);
     let event = await getEvent(item.event_id);
 
     return res.render("signup", {
@@ -1060,18 +1061,48 @@ app.get("/admin/event/:id", async (req, res) => {
         end: item.end,
       };
     });
-    signups.forEach((item) => {
-      summary[item.item_id].signups += item.quantity;
+    signups.forEach((signup) => {
+      summary[signup.item_id].signups += signup.quantity;
     });
   }
 
   return res.render("admin-event", {
     loggedIn: userID,
     event,
-    items: signups,
+    signups,
     summary,
   });
 });
+
+app.get(
+  "/admin/signup/delete",
+  [
+    check("signup", "Missing signup ID").isInt(),
+    check("event", "Missing event ID").isInt(),
+  ],
+  async (req, res) => {
+    let userID = isLoggedIn(req, res);
+    if (!userID) {
+      return res.redirect("/login");
+    }
+
+    let admin = await isAdmin(userID);
+    if (!admin) {
+      return res.redirect("/");
+    }
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.redirect("/admin/event/" + req.query.event);
+    }
+
+    await cancelSignup(req.query.signup);
+
+    console.log(`Canceled signup ${req.query.signup}`);
+
+    return res.redirect(`/admin/event/${req.query.event}`);
+  }
+);
 
 const server = app.listen(process.env.PORT, "0.0.0.0", () => {
   console.log(

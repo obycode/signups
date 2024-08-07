@@ -43,7 +43,7 @@ html
                       a(href="#" data-event=event.id data-item=id class="button-style button-style3 delete-link") Delete
           p
             a(href="/admin/item/new?event=" + event.id class="button-style button-style2") Add Item
-          if items.length
+          if signups.length
             h3 Signups
             table
               thead
@@ -53,29 +53,31 @@ html
                   th Email
                   th Quantity
                   th Notes
+                  th Actions
               tbody
-                each item in items
+                each signup in signups
                   tr
                     td
                       p
-                        | #{item.item_title}
-                        if item.start && item.end
+                        | #{signup.item_title}
+                        if signup.start && signup.end
                           br
-                          span.time #{item.start} - #{item.end}
-                        else if item.end
+                          span.time #{signup.start} - #{signup.end}
+                        else if signup.end
                           br
-                          span.time Deadline: #{item.end}
-                    td #{item.user_name}
-                    td #{item.email}
-                    td #{item.quantity}
-                    td #{item.comment}
+                          span.time Deadline: #{signup.end}
+                    td #{signup.user_name}
+                    td #{signup.email}
+                    td #{signup.quantity}
+                    td #{signup.comment}
+                    td
+                      a(href="#" data-event=event.id data-signup=signup.id class="button-style button-style3 cancel-link") Cancel
           else
             p No signups for this event.
     include footer
     script.
       document.addEventListener('DOMContentLoaded', function() {
         const deleteLinks = document.querySelectorAll('.delete-link');
-
         deleteLinks.forEach(link => {
           link.addEventListener('click', function(event) {
             event.preventDefault();
@@ -85,6 +87,22 @@ html
             const url = `/admin/item/delete?event=${eventId}&item=${itemId}`;
 
             if (confirm('Are you sure you want to delete this item?')) {
+              // Redirect to the delete URL
+              window.location.href = url;
+            }
+          });
+        });
+
+        const cancelLinks = document.querySelectorAll('.cancel-link');
+        cancelLinks.forEach(link => {
+          link.addEventListener('click', function(event) {
+            event.preventDefault();
+
+            const eventId = this.getAttribute('data-event');
+            const signupId = this.getAttribute('data-signup');
+            const url = `/admin/signup/delete?event=${eventId}&signup=${signupId}`;
+
+            if (confirm('Are you sure you want to cancel this signup?')) {
               // Redirect to the delete URL
               window.location.href = url;
             }

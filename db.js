@@ -516,7 +516,7 @@ async function getSignupsForEvent(event_id) {
         SELECT items.id AS item_id, items.title AS item_title,
                items.start_time, items.end_time,
                users.name AS user_name, users.email,
-               signups.quantity, signups.comment
+               signups.id, signups.quantity, signups.comment
         FROM signups
         JOIN items ON signups.item_id = items.id
         JOIN events ON items.event_id = events.id
