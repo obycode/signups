@@ -23,11 +23,13 @@ html
               label(for='summary') Summary (shows in events listing):
               input#notes.form-control(type='text' name='summary' value=event.summary)
             .form-group
-              label(for='description') Description (shows in event page):
-              input#notes.form-control(type='text' name='description' required value=event.description)
+              label(for='description') Description (HTML allowed; shows in event page):
+              textarea#notes.form-control(name='description' required)
+                | #{event.description}
             .form-group
-              label(for='email_info') Email Info (details only shown after signup confirmed):
-              textarea#email_info.form-control(name='email_info' cols='30' rows='4' value=event.email_info)
+              label(for='email_info') Email Info (HTML allowed; details only shown after signup confirmed):
+              textarea#email_info.form-control(name='email_info' cols='30' rows='4')
+                | #{event.email_info}
             .form-group
               label(for='image') Image:
               input#image.form-control(type='file' name='image')
