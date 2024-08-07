@@ -11,6 +11,9 @@ html
       main
         section(class="Main-content")
           h2 #{event.title}
+          p !{event.description}
+          p
+            a(href="/admin/event/edit?event=" + event.id class="button-style button-style1") Edit Event
         section(class="event-details")
           if Object.keys(summary).length
             h3 Summary
