@@ -49,6 +49,7 @@ const {
   createItem,
   updateItem,
   deleteItem,
+  getKidsForEvent,
 } = require("./db");
 
 let neon = new neoncrm.Client(
@@ -1057,6 +1058,8 @@ app.get("/admin/event/:id", async (req, res) => {
   let items = await getItemsForEvent(event.id);
   items = items.map(setTimes);
 
+  let kids = await getKidsForEvent(event.id);
+
   // Collect a summary of the number of signups for each item
   let summary = {};
   total_needed = 0;
@@ -1092,6 +1095,7 @@ app.get("/admin/event/:id", async (req, res) => {
     summary,
     total_needed,
     total_signups,
+    kids,
   });
 });
 

@@ -43,6 +43,34 @@ html
                       a(href="#" data-event=event.id data-item=id class="button-style button-style3 delete-link") Delete
           p
             a(href="/admin/item/new?event=" + event.id class="button-style button-style2") Add Item
+          if kids.length
+            h3 Kids
+            table
+              thead
+                tr
+                  th ID
+                  th Name
+                  th Shelter
+                  th Age
+                  th Gender
+                  th Shirt Size
+                  th Pants Size
+                  th Color
+                  th Comments
+                  th Internal Notes
+              tbody
+                each kid in kids
+                  tr
+                    td #{kid.id}
+                    td #{kid.name}
+                    td #{kid.shelter}
+                    td #{kid.age}
+                    td #{kid.gender}
+                    td #{kid.shirt_size}
+                    td #{kid.pants_size}
+                    td #{kid.color}
+                    td #{kid.comments}
+                    td #{kid.internal}
           if signups.length
             h3 Signups
             table

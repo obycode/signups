@@ -596,6 +596,23 @@ async function getKid(kid_id) {
   }
 }
 
+async function getKidsForEvent(event_id) {
+  try {
+    const result = await pool.query(
+      `
+        SELECT * FROM kids
+        WHERE event = $1
+        ORDER BY shelter, id
+      `,
+      [event_id]
+    );
+    return result.rows;
+  } catch (err) {
+    console.error(err);
+    return [];
+  }
+}
+
 // ADMIN
 
 async function isAdmin(user_id) {
@@ -640,5 +657,6 @@ module.exports = {
   getSignupsForEvent,
   createKid,
   getKid,
+  getKidsForEvent,
   isAdmin,
 };
