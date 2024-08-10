@@ -15,8 +15,8 @@ html
           p
             a(href="/admin/event/edit?event=" + event.id class="button-style button-style1") Edit Event
         section(class="event-details")
+          h3 Total: #{total_signups} signups / #{total_needed} needed
           if Object.keys(summary).length
-            h3 Summary
             table
               thead
                 tr

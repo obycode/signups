@@ -1051,8 +1051,11 @@ app.get("/admin/event/:id", async (req, res) => {
 
   // Collect a summary of the number of signups for each item
   let summary = {};
+  total_needed = 0;
+  total_signups = 0;
   if (items.length < 20) {
     items.forEach((item) => {
+      total_needed += item.needed;
       summary[item.id] = {
         signups: 0,
         needed: item.needed,
@@ -1062,7 +1065,15 @@ app.get("/admin/event/:id", async (req, res) => {
       };
     });
     signups.forEach((signup) => {
+      total_signups += signup.quantity;
       summary[signup.item_id].signups += signup.quantity;
+    });
+  } else {
+    items.forEach((item) => {
+      total_needed += item.needed;
+    });
+    signups.forEach((signup) => {
+      total_signups += signup.quantity;
     });
   }
 
@@ -1071,6 +1082,8 @@ app.get("/admin/event/:id", async (req, res) => {
     event,
     signups,
     summary,
+    total_needed,
+    total_signups,
   });
 });
 
