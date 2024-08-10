@@ -35,6 +35,7 @@ const {
   getUser,
   getUserByEmail,
   getItemsForEvent,
+  countItemsForEvent,
   createEvent,
   getEvent,
   updateEvent,
@@ -460,28 +461,35 @@ app.post(
   }
 );
 
-async function renderEvent(userID, admin, event, res) {
-  let items = await getItemsForEvent(event.id);
+async function renderEvent(userID, admin, event, page, limit, res) {
+  const skip = (page - 1) * limit;
+  let items = await getItemsForEvent(event.id, skip, limit);
   items = items.map(setTimes);
+  const totalItems = await countItemsForEvent(event.id);
+  const totalPages = Math.ceil(totalItems / limit);
 
   return res.render("event", {
     loggedIn: userID,
     isAdmin: admin,
     event,
     items,
+    currentPage: page,
+    totalPages,
   });
 }
 
 app.get("/event/:eventID", async (req, res) => {
   let userID = isLoggedIn(req, res);
   let admin = await isAdmin(userID);
+  const page = parseInt(req.query.page) || 1;
+  const limit = 20;
 
   let event = await getEvent(req.params.eventID);
   if (!event) {
     return res.redirect("/");
   }
 
-  return await renderEvent(userID, admin, event, res);
+  return await renderEvent(userID, admin, event, page, limit, res);
 });
 
 app.get(

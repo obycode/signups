@@ -328,7 +328,7 @@ async function getItem(item_id) {
   }
 }
 
-async function getItemsForEvent(event_id) {
+async function getItemsForEvent(event_id, skip = 0, limit = 20) {
   try {
     // Join with signups to get the number of signups for each item
     const result = await pool.query(
@@ -338,14 +338,32 @@ async function getItemsForEvent(event_id) {
         LEFT JOIN signups ON items.id = signups.item_id AND signups.canceled_at IS NULL
         WHERE event_id = $1
         GROUP BY items.id
-        ORDER BY COALESCE(items.start_time, items.end_time), signups ASC;
+        ORDER BY COALESCE(items.start_time, items.end_time), signups ASC
+        LIMIT $2 OFFSET $3;
       `,
-      [event_id]
+      [event_id, limit, skip]
     );
     return result.rows;
   } catch (err) {
     console.error(err);
     return [];
+  }
+}
+
+async function countItemsForEvent(event_id) {
+  try {
+    const result = await pool.query(
+      `
+        SELECT COUNT(*) AS total
+        FROM items
+        WHERE event_id = $1;
+      `,
+      [event_id]
+    );
+    return parseInt(result.rows[0].total, 10);
+  } catch (err) {
+    console.error(err);
+    return 0;
   }
 }
 
@@ -607,6 +625,7 @@ module.exports = {
   getItem,
   getEvent,
   getItemsForEvent,
+  countItemsForEvent,
   updateEvent,
   deleteEvent,
   createUser,
