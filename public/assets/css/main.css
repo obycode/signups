@@ -909,6 +909,14 @@ th.sortable.desc:after {
   content: '\25bc'; /* Down arrow */
 }
 
+h3 small a {
+  font-weight: normal;
+  color: #007BFF;
+  margin-left: 10px;
+  text-transform: none;
+  border: none;
+}
+
 /* Add media queries for responsiveness - when the screen is 500px wide or less, stack the links on top of each other */
 @media screen and (max-width: 767px) {
   .title {

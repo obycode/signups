@@ -60,4 +60,51 @@ document.addEventListener("DOMContentLoaded", () => {
         .forEach((tr) => tbody.appendChild(tr));
     })
   );
+
+  // Handle the CSV file generation
+  document.querySelectorAll(".download-csv").forEach((link) => {
+    console.log("got link", link);
+    link.addEventListener("click", function (e) {
+      e.preventDefault();
+
+      const tableId = this.getAttribute("data-table-id");
+      const table = document.getElementById(tableId);
+      console.log("got table", table);
+      const rows = Array.from(table.querySelectorAll("tr"));
+      const csvContent = rows
+        .map((row) => {
+          const cols = Array.from(row.querySelectorAll("th, td"));
+          return cols
+            .map((col) => `"${col.innerText.replace(/"/g, '""')}"`)
+            .join(",");
+        })
+        .join("\n");
+      console.log("got csv content", csvContent);
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const downloadLink = document.createElement("a");
+      downloadLink.href = URL.createObjectURL(blob);
+      downloadLink.download = `${tableId}-data.csv`;
+      downloadLink.style.display = "none";
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+    });
+  });
+
+  // Handle toggling hide/show of sections
+  document.querySelectorAll(".toggle-section").forEach((link) => {
+    link.addEventListener("click", function (e) {
+      e.preventDefault();
+
+      const sectionId = this.getAttribute("data-section-id");
+      const section = document.getElementById(sectionId);
+
+      if (section.style.display === "none") {
+        section.style.display = "block";
+      } else {
+        section.style.display = "none";
+      }
+    });
+  });
 });
