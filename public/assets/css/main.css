@@ -909,9 +909,10 @@ th.sortable.desc:after {
   content: '\25bc'; /* Down arrow */
 }
 
-h3 small a {
+small a {
+  font-size: 12px;
   font-weight: normal;
-  color: #007BFF;
+  color: #65cab5;
   margin-left: 10px;
   text-transform: none;
   border: none;

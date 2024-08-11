@@ -36,6 +36,7 @@ const {
   getUserByEmail,
   getItemsForEvent,
   countItemsForEvent,
+  countNeededForEvent,
   createEvent,
   getEvent,
   updateEvent,
@@ -1055,7 +1056,7 @@ app.get("/admin/event/:id", async (req, res) => {
   let signups = await getSignupsForEvent(event.id);
   signups = signups.map(setTimes);
 
-  let items = await getItemsForEvent(event.id);
+  let items = await getItemsForEvent(event.id, 0, 20);
   items = items.map(setTimes);
 
   let kids = await getKidsForEvent(event.id);
@@ -1080,12 +1081,8 @@ app.get("/admin/event/:id", async (req, res) => {
       summary[signup.item_id].signups += signup.quantity;
     });
   } else {
-    items.forEach((item) => {
-      total_needed += item.needed;
-    });
-    signups.forEach((signup) => {
-      total_signups += signup.quantity;
-    });
+    total_needed = await countNeededForEvent(event.id);
+    total_signups = signups.reduce((acc, signup) => acc + signup.quantity, 0);
   }
 
   return res.render("admin-event", {

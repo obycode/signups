@@ -328,7 +328,7 @@ async function getItem(item_id) {
   }
 }
 
-async function getItemsForEvent(event_id, skip = 0, limit = 20) {
+async function getItemsForEvent(event_id, skip, limit) {
   try {
     // Join with signups to get the number of signups for each item
     const result = await pool.query(
@@ -355,6 +355,23 @@ async function countItemsForEvent(event_id) {
     const result = await pool.query(
       `
         SELECT COUNT(*) AS total
+        FROM items
+        WHERE event_id = $1;
+      `,
+      [event_id]
+    );
+    return parseInt(result.rows[0].total, 10);
+  } catch (err) {
+    console.error(err);
+    return 0;
+  }
+}
+
+async function countNeededForEvent(event_id) {
+  try {
+    const result = await pool.query(
+      `
+        SELECT SUM(needed) AS total
         FROM items
         WHERE event_id = $1;
       `,
@@ -643,6 +660,7 @@ module.exports = {
   getEvent,
   getItemsForEvent,
   countItemsForEvent,
+  countNeededForEvent,
   updateEvent,
   deleteEvent,
   createUser,
