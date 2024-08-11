@@ -892,6 +892,23 @@ form.signup {
   }
 }
 
+th.sortable {
+  cursor: pointer;
+}
+
+th.sortable:after {
+  content: '\25b2'; /* Up arrow */
+  padding-left: 10px;
+}
+
+th.sortable.asc:after {
+  content: '\25b2'; /* Up arrow */
+}
+
+th.sortable.desc:after {
+  content: '\25bc'; /* Down arrow */
+}
+
 /* Add media queries for responsiveness - when the screen is 500px wide or less, stack the links on top of each other */
 @media screen and (max-width: 767px) {
   .title {

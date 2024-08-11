@@ -48,22 +48,22 @@ html
             table
               thead
                 tr
-                  th ID
-                  th Name
-                  th Shelter
-                  th Age
-                  th Gender
-                  th Shirt Size
-                  th Pants Size
-                  th Color
-                  th Comments
-                  th Internal Notes
+                  th(data-sort="id" class="sortable") ID
+                  th(data-sort="shelter" class="sortable") Shelter
+                  th(data-sort="name") Name
+                  th(data-sort="age") Age
+                  th(data-sort="gender") Gender
+                  th(data-sort="shirt_size") Shirt Size
+                  th(data-sort="pant_size") Pants Size
+                  th(data-sort="color") Color
+                  th(data-sort="comments") Comments
+                  th(data-sort="internal") Internal Notes
               tbody
                 each kid in kids
                   tr
                     td #{kid.id}
-                    td #{kid.name}
                     td #{kid.shelter}
+                    td #{kid.name}
                     td #{kid.age}
                     td #{kid.gender}
                     td #{kid.shirt_size}
@@ -103,37 +103,4 @@ html
           else
             p No signups for this event.
     include footer
-    script.
-      document.addEventListener('DOMContentLoaded', function() {
-        const deleteLinks = document.querySelectorAll('.delete-link');
-        deleteLinks.forEach(link => {
-          link.addEventListener('click', function(event) {
-            event.preventDefault();
-
-            const eventId = this.getAttribute('data-event');
-            const itemId = this.getAttribute('data-item');
-            const url = `/admin/item/delete?event=${eventId}&item=${itemId}`;
-
-            if (confirm('Are you sure you want to delete this item?')) {
-              // Redirect to the delete URL
-              window.location.href = url;
-            }
-          });
-        });
-
-        const cancelLinks = document.querySelectorAll('.cancel-link');
-        cancelLinks.forEach(link => {
-          link.addEventListener('click', function(event) {
-            event.preventDefault();
-
-            const eventId = this.getAttribute('data-event');
-            const signupId = this.getAttribute('data-signup');
-            const url = `/admin/signup/delete?event=${eventId}&signup=${signupId}`;
-
-            if (confirm('Are you sure you want to cancel this signup?')) {
-              // Redirect to the delete URL
-              window.location.href = url;
-            }
-          });
-        });
-      });
+    script(src="/assets/js/admin.js")

@@ -33,7 +33,7 @@ function normalizeGender(input) {
     return "";
   }
 
-  const lowerInput = input.toLowerCase();
+  const lowerInput = input.trim().toLowerCase();
   const genderMap = {
     boy: "boy",
     male: "boy",
