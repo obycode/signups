@@ -333,7 +333,7 @@ async function getItemsForEvent(event_id, skip, limit) {
     // Join with signups to get the number of signups for each item
     const result = await pool.query(
       `
-        SELECT items.*, COUNT(signups.id) AS signups
+        SELECT items.*, COALESCE(SUM(signups.quantity), 0) AS signups
         FROM items
         LEFT JOIN signups ON items.id = signups.item_id AND signups.canceled_at IS NULL
         WHERE event_id = $1
