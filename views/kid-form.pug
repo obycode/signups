@@ -1,0 +1,48 @@
+.form-group
+  label(for='name') Name:
+  input#name.form-control(type='text' name='name' required value=kid.name || '')
+
+.form-group
+  label(for='shelter') Shelter:
+  select#shelter.form-control(name='shelter' required)
+    each shelter in shelters
+      option(value=shelter.id selected=(shelter.id === kid.shelter))= shelter.name
+
+.form-group
+  label(for='age') Age:
+  input#age.form-control(type='number' name='age' value=kid.age || '')
+
+.form-group
+  label(for='gender') Gender:
+  input#gender.form-control(type='text' name='gender' value=kid.gender || '')
+
+.form-group
+  label(for='shirt_size') Shirt Size:
+  input#shirt_size.form-control(type='text' name='shirt_size' value=kid.shirt_size || '')
+
+.form-group
+  label(for='pant_size') Pant Size:
+  input#pant_size.form-control(type='text' name='pant_size' value=kid.pant_size || '')
+
+.form-group
+  label(for='color') Favorite Color:
+  input#color.form-control(type='text' name='color' value=kid.color || '')
+
+.form-group
+  label(for='comments') Comments (shared with donors):
+  textarea#comments.form-control(name='comments' required cols='30' rows='12')
+    | #{kid.comments || ''}
+
+.form-group
+  label(for='internal') Internal Notes (not shared with donors):
+  textarea#internal.form-control(name='internal' cols='30' rows='12')
+    | #{kid.internal || ''}
+
+// Hidden inputs for event, id, and added status
+input#event.form-control(type='hidden' name='event' value=kid.event)
+input#code.form-control(type='hidden' name='code' value=kid.code)
+
+if kid.id
+  input#id.form-control(type='hidden' name='id' value=kid.id)
+
+input#added.form-control(type='hidden' name='added' value=kid.added)

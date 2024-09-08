@@ -18,7 +18,13 @@ async function ensureEventsTable(client) {
         description TEXT,
         email_info TEXT,
         image TEXT,
-        active BOOLEAN
+        active BOOLEAN,
+        form_code TEXT,
+        adopt_signup BOOLEAN,
+        kid_title TEXT,
+        kid_notes TEXT,
+        kid_email_info TEXT,
+        kid_needed INTEGER
       );
     `);
     console.log("Created 'events' table.");
@@ -102,14 +108,15 @@ async function ensureKidsTable(client) {
         id SERIAL PRIMARY KEY,
         event INTEGER,
         name TEXT,
-        shelter TEXT,
+        shelter INTEGER,
         age INTEGER,
         gender TEXT,
         shirt_size TEXT,
         pant_size TEXT,
         color TEXT,
         comments TEXT,
-        internal TEXT
+        internal TEXT,
+        added BOOLEAN DEFAULT FALSE
       );
     `);
     console.log("Created 'kids' table.");
@@ -128,7 +135,24 @@ async function ensureAdminTable(client) {
         user_id INTEGER PRIMARY KEY
       );
     `);
-    console.log("Created 'kids' table.");
+    console.log("Created 'admin' table.");
+  }
+}
+
+async function ensureSheltersTable(client) {
+  const exists = await client.query(`SELECT EXISTS (
+    SELECT FROM information_schema.tables
+    WHERE table_name = 'shelters'
+  );`);
+
+  if (!exists.rows[0].exists) {
+    await client.query(`
+      CREATE TABLE shelters (
+        id SERIAL PRIMARY KEY,
+        name TEXT,
+      );
+    `);
+    console.log("Created 'shelters' table.");
   }
 }
 
@@ -151,6 +175,7 @@ async function init() {
     ensureSignupsTable(client);
     ensureKidsTable(client);
     ensureAdminTable(client);
+    ensureSheltersTable(client);
   } catch (err) {
     console.error("Error initializing tables:", err);
   } finally {
@@ -165,8 +190,8 @@ async function init() {
 async function createEvent(event) {
   const result = await pool.query(
     `
-    INSERT INTO events (title, summary, description, email_info, image, active)
-    VALUES ($1, $2, $3, $4, $5, $6)
+    INSERT INTO events (title, summary, description, email_info, image, active, form_code, adopt_signup, kid_title, kid_notes, kid_email_info, kid_needed)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
     RETURNING id
   `,
     [
@@ -176,6 +201,12 @@ async function createEvent(event) {
       event.email_info,
       event.image,
       event.active,
+      event.form_code,
+      event.adopt_signup,
+      event.kid_title,
+      event.kid_notes,
+      event.kid_email_info,
+      event.kid_needed,
     ]
   );
   return result.rows[0].id;
@@ -219,10 +250,10 @@ async function getActiveEvents() {
 async function updateEvent(event_id, event) {
   const query = `
     UPDATE events
-    SET title = $1, summary = $2, description = $3, email_info = $4, ${
-      event.image ? "image = $5," : ""
-    } active = ${event.image ? "$6" : "$5"}
-    WHERE id = ${event.image ? "$7" : "$6"}
+    SET title = $1, summary = $2, description = $3, email_info = $4, active = $5,
+    adopt_signup = $6, kid_title = $7, kid_notes = $8, kid_email_info = $9, kid_needed = $10
+    ${event.image ? "image = $11," : ""}
+    WHERE id = ${event.image ? "$12" : "$11"}
   `;
 
   const values = event.image
@@ -231,8 +262,13 @@ async function updateEvent(event_id, event) {
         event.summary,
         event.description,
         event.email_info,
-        event.image,
         event.active,
+        event.adopt_signup,
+        event.kid_title,
+        event.kid_notes,
+        event.kid_email_info,
+        event.kid_needed,
+        event.image,
         event_id,
       ]
     : [
@@ -241,6 +277,11 @@ async function updateEvent(event_id, event) {
         event.description,
         event.email_info,
         event.active,
+        event.adopt_signup,
+        event.kid_title,
+        event.kid_notes,
+        event.kid_email_info,
+        event.kid_needed,
         event_id,
       ];
 
@@ -570,7 +611,7 @@ async function getSignupsForEvent(event_id) {
 
 // KIDS
 
-async function createKid(kid) {
+async function createKid(event, kid) {
   const result = await pool.query(
     `
     INSERT INTO kids (event, name, shelter, age, gender, shirt_size, pant_size, color, comments, internal)
@@ -578,7 +619,7 @@ async function createKid(kid) {
     RETURNING id
   `,
     [
-      kid.event,
+      event,
       kid.name,
       kid.shelter,
       kid.age,
@@ -613,12 +654,61 @@ async function getKid(kid_id) {
   }
 }
 
+async function updateKid(kid_id, kid) {
+  await pool.query(
+    `
+    UPDATE kids
+    SET event = $1, name = $2, shelter = $3, age = $4, gender = $5,
+      shirt_size = $6, pant_size = $7, color = $8, comments = $9,
+      internal = $10, added = $11
+    WHERE id = $12
+  `,
+    [
+      kid.event,
+      kid.name,
+      kid.shelter,
+      kid.age,
+      kid.gender,
+      kid.shirt_size,
+      kid.pant_size,
+      kid.color,
+      kid.comments,
+      kid.internal,
+      kid.added,
+      kid_id,
+    ]
+  );
+}
+
 async function getKidsForEvent(event_id) {
   try {
     const result = await pool.query(
       `
-        SELECT * FROM kids
+        SELECT kids.*, shelters.name AS shelter_name
+        FROM kids
+        JOIN shelters ON kids.shelter = shelters.id
         WHERE event = $1
+        AND added = TRUE
+        ORDER BY shelters.name, kids.id
+      `,
+      [event_id]
+    );
+    return result.rows;
+  } catch (err) {
+    console.error(err);
+    return [];
+  }
+}
+
+async function getPendingKidsForEvent(event_id) {
+  try {
+    const result = await pool.query(
+      `
+        SELECT kids.*, shelters.name AS shelter_name
+        FROM kids
+        JOIN shelters ON kids.shelter = shelters.id
+        WHERE event = $1
+        AND added = FALSE
         ORDER BY shelter, id
       `,
       [event_id]
@@ -628,6 +718,27 @@ async function getKidsForEvent(event_id) {
     console.error(err);
     return [];
   }
+}
+
+async function deleteKid(kid_id) {
+  await pool.query(
+    `
+    DELETE FROM kids
+    WHERE id = $1
+  `,
+    [kid_id]
+  );
+}
+
+async function approveKid(kid_id) {
+  await pool.query(
+    `
+    UPDATE kids SET added = TRUE WHERE id = $1
+  `,
+    [kid_id]
+  );
+
+  // TODO: Add item to event based on this kid and the event settings
 }
 
 // ADMIN
@@ -646,6 +757,42 @@ async function isAdmin(user_id) {
   } catch (err) {
     console.error(err);
     return false;
+  }
+}
+
+// SHELTERS
+
+async function getShelters() {
+  try {
+    const result = await pool.query(
+      `
+        SELECT * FROM shelters
+      `
+    );
+    return result.rows;
+  } catch (err) {
+    console.error(err);
+    return [];
+  }
+}
+
+async function getShelter(shelter_id) {
+  try {
+    const result = await pool.query(
+      `
+        SELECT name FROM shelters
+        WHERE id = $1
+      `,
+      [shelter_id]
+    );
+
+    if (result.rows.length === 0) {
+      return null;
+    }
+    return result.rows[0];
+  } catch (err) {
+    console.error(err);
+    return null;
   }
 }
 
@@ -675,6 +822,12 @@ module.exports = {
   getSignupsForEvent,
   createKid,
   getKid,
+  updateKid,
   getKidsForEvent,
+  getPendingKidsForEvent,
+  deleteKid,
+  approveKid,
   isAdmin,
+  getShelters,
+  getShelter,
 };

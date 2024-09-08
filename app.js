@@ -50,7 +50,14 @@ const {
   createItem,
   updateItem,
   deleteItem,
+  createKid,
+  getKid,
   getKidsForEvent,
+  getPendingKidsForEvent,
+  updateKid,
+  deleteKid,
+  approveKid,
+  getShelters,
 } = require("./db");
 
 let neon = new neoncrm.Client(
@@ -76,8 +83,10 @@ app.use(
   })
 );
 
+let shelters = [];
 (async () => {
   await dbInit(false);
+  shelters = await getShelters();
 })();
 
 function isLoggedIn(req, res) {
@@ -418,7 +427,7 @@ app.get(
 app.post(
   "/register",
   [
-    check("name").trim(),
+    check("name").trim().escape(),
     check("email", "Missing or invalid email").isEmail(),
     check("phone", "Invalid phone number")
       .isMobilePhone()
@@ -517,7 +526,7 @@ app.post(
     check("item", "Missing or invalid item ID").trim().escape(),
     check("event", "Missing or invalid event ID").trim().escape(),
     check("quantity", "Missing or invalid quantity").isInt(),
-    check("comment").trim(),
+    check("comment").trim().escape(),
   ],
   async (req, res) => {
     let userID = isLoggedIn(req, res);
@@ -542,6 +551,7 @@ app.post(
 
     let user = await getUser(userID);
     let item = await getItem(item_id);
+    item = setTimes(item);
     let event = await getEvent(item.event_id);
 
     sendConfirmation(
@@ -552,8 +562,8 @@ app.post(
         emailInfo: item.email_info,
         eventEmailInfo: event.email_info,
         title: item.title,
-        start: item.start_time,
-        end: item.end_time,
+        start: item.start,
+        end: item.end,
         notes: item.notes,
       },
       quantity,
@@ -615,6 +625,7 @@ app.get("/admin/event/new", async (req, res) => {
 
   return res.render("new-event", {
     loggedIn: userID,
+    event: {},
   });
 });
 
@@ -622,10 +633,22 @@ app.post(
   "/admin/event",
   upload.single("image"),
   [
-    check("title", "Title is required").trim().notEmpty(),
+    check("title", "Title is required").trim().escape().notEmpty(),
     check("description", "Description is required").trim().notEmpty(),
-    check("summary", "Summary is required").trim(),
+    check("summary", "Summary is required").trim().escape(),
     check("email_info").trim(),
+    check("active", "Active is required")
+      .optional({ checkFalsy: true })
+      .isIn(["on", "off", "true", "false"])
+      .withMessage("Invalid value for active"),
+    check("adopt_signup", "Adopt signup is required")
+      .optional({ checkFalsy: true })
+      .isIn(["on", "off", "true", "false"])
+      .withMessage("Invalid value for adopt_signup"),
+    check("kid_title").trim().escape().optional(),
+    check("kid_notes").trim().escape().optional(),
+    check("kid_email_info").trim().optional(),
+    check("kid_needed").isInt().optional(),
   ],
   async (req, res) => {
     let userID = isLoggedIn(req, res);
@@ -638,21 +661,39 @@ app.post(
       return res.redirect("/");
     }
 
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.render("new-event", {
-        loggedIn: userID,
-        errors: errors.array(),
-      });
-    }
-
     const event = {
       title: req.body.title,
       description: req.body.description,
       summary: req.body.summary,
       email_info: req.body.email_info,
-      active: false,
+      active: req.body.active,
+      form_code: uuidv4(),
+      adopt_signup: req.body.adopt_signup,
+      kid_title: req.body.kid_title,
+      kid_notes: req.body.kid_notes,
+      kid_email_info: req.body.kid_email_info,
+      kid_needed: req.body.kid_needed,
     };
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.render("new-event", {
+        loggedIn: userID,
+        event,
+        errors: errors.array(),
+      });
+    }
+
+    if (req.body.active === "on" || req.body.active === "true") {
+      req.body.active = true;
+    } else {
+      req.body.active = false;
+    }
+    if (req.body.adopt_signup === "on" || req.body.adopt_signup === "true") {
+      req.body.adopt_signup = true;
+    } else {
+      req.body.adopt_signup = false;
+    }
 
     if (req.file) {
       const fileContent = req.file.buffer;
@@ -678,6 +719,7 @@ app.post(
         console.error("Error uploading image to S3:", error);
         return res.status(500).render("new-event", {
           loggedIn: userID,
+          event,
           errors: [{ msg: "Error uploading image" }],
         });
       }
@@ -687,6 +729,7 @@ app.post(
     if (!newEvent) {
       return res.render("new-event", {
         loggedIn: userID,
+        event,
         errors: [{ msg: "Failed to create event" }],
       });
     }
@@ -732,10 +775,22 @@ app.post(
   "/admin/event-edit",
   upload.single("image"),
   [
-    check("title", "Title is required").trim().notEmpty(),
+    check("title", "Title is required").trim().escape().notEmpty(),
     check("description", "Description is required").trim().notEmpty(),
-    check("summary").trim(),
+    check("summary").trim().escape(),
     check("email_info").trim(),
+    check("active", "Active is required")
+      .optional({ checkFalsy: true })
+      .isIn(["on", "off", "true", "false"])
+      .withMessage("Invalid value for active"),
+    check("adopt_signup", "Adopt signup is required")
+      .optional({ checkFalsy: true })
+      .isIn(["on", "off", "true", "false"])
+      .withMessage("Invalid value for adopt_signup"),
+    check("kid_title").trim().escape().optional(),
+    check("kid_notes").trim().escape().optional(),
+    check("kid_email_info").trim().optional(),
+    check("kid_needed").isInt().optional(),
   ],
   async (req, res) => {
     let userID = isLoggedIn(req, res);
@@ -756,6 +811,11 @@ app.post(
         summary: req.body.summary,
         email_info: req.body.email_info,
         active: req.body.active,
+        adopt_signup: req.body.adopt_signup,
+        kid_title: req.body.kid_title,
+        kid_notes: req.body.kid_notes,
+        kid_email_info: req.body.kid_email_info,
+        kid_needed: req.body.kid_needed,
       };
       return res.render("edit-event", {
         loggedIn: userID,
@@ -764,12 +824,28 @@ app.post(
       });
     }
 
+    if (req.body.active === "on" || req.body.active === "true") {
+      req.body.active = true;
+    } else {
+      req.body.active = false;
+    }
+    if (req.body.adopt_signup === "on" || req.body.adopt_signup === "true") {
+      req.body.adopt_signup = true;
+    } else {
+      req.body.adopt_signup = false;
+    }
+
     const event = {
       title: req.body.title,
       description: req.body.description,
       summary: req.body.summary,
       email_info: req.body.email_info,
-      active: req.body.active == "on",
+      active: req.body.active,
+      adopt_signup: req.body.adopt_signup,
+      kid_title: req.body.kid_title,
+      kid_notes: req.body.kid_notes,
+      kid_email_info: req.body.kid_email_info,
+      kid_needed: req.body.kid_needed,
     };
 
     if (req.file) {
@@ -833,7 +909,7 @@ app.get(
 app.post(
   "/admin/item",
   [
-    check("title", "Title is required").trim().notEmpty(),
+    check("title", "Title is required").trim().escape().notEmpty(),
     check("event", "Event ID is required").isInt(),
     check("needed", "Needed is required").isInt(),
     check("notes").trim(),
@@ -942,7 +1018,7 @@ app.post(
   [
     check("id", "ID is required").isInt(),
     check("event", "Event ID is required").isInt(),
-    check("title", "Title is required").trim().notEmpty(),
+    check("title", "Title is required").trim().escape().notEmpty(),
     check("needed", "Needed is required").isInt(),
     check("notes").trim(),
     check("email_info").trim(),
@@ -1059,6 +1135,7 @@ app.get("/admin/event/:id", async (req, res) => {
   let items = await getItemsForEvent(event.id, 0, 20);
   items = items.map(setTimes);
 
+  let pending_kids = await getPendingKidsForEvent(event.id);
   let kids = await getKidsForEvent(event.id);
 
   // Collect a summary of the number of signups for each item
@@ -1093,6 +1170,7 @@ app.get("/admin/event/:id", async (req, res) => {
     total_needed,
     total_signups,
     kids,
+    pending_kids,
   });
 });
 
@@ -1123,6 +1201,256 @@ app.get(
     console.log(`Canceled signup ${req.query.signup}`);
 
     return res.redirect(`/admin/event/${req.query.event}`);
+  }
+);
+
+app.get(
+  "/add-kids",
+  [
+    check("event", "Missing event ID").isInt(),
+    check("form_code", "Missing form code").trim().escape(),
+  ],
+  async (req, res) => {
+    let event = await getEvent(req.query.event);
+    if (!event || event.form_code != req.query.form_code) {
+      return res.status(400).json({ error: "Invalid event ID or form code" });
+    }
+
+    return res.render("new-kid", {
+      event,
+      kid: {
+        event: req.query.event,
+        code: req.query.form_code,
+      },
+      shelters,
+    });
+  }
+);
+
+app.post(
+  "/add-kid",
+  [
+    check("event", "Event ID is required").isInt(),
+    check("name", "Name is required").trim().escape().notEmpty(),
+    check("shelter", "Shelter is required").isInt(),
+    check("age", "Age is required").isInt(),
+    check("gender").trim().escape(),
+    check("shirt_size").trim().escape(),
+    check("pant_size").trim().escape(),
+    check("color").trim().escape(),
+    check("comments").trim().escape(),
+    check("internal").trim().escape(),
+    check("code", "Missing form code").trim().escape(),
+  ],
+  async (req, res) => {
+    let event = await getEvent(req.body.event);
+    if (!event || event.form_code != req.body.code) {
+      return res.status(400).json({ error: "Invalid event ID or form code" });
+    }
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ error: JSON.stringify(errors.array()) });
+    }
+
+    const kid = {
+      name: req.body.name,
+      shelter: req.body.shelter,
+      age: req.body.age,
+      gender: req.body.gender,
+      shirt_size: req.body.shirt_size,
+      pant_size: req.body.pant_size,
+      color: req.body.color,
+      comments: req.body.comments,
+      internal: req.body.internal,
+      added: false,
+    };
+
+    await createKid(req.body.event, kid);
+
+    console.log(`Added kid for event ${req.body.event}`);
+
+    return res.redirect(
+      `/add-kids?event=${req.body.event}&form_code=${req.body.code}`
+    );
+  }
+);
+
+app.get(
+  "/admin/kid/edit",
+  [
+    check("kid", "Missing kid ID").isInt(),
+    check("event", "Missing event ID").isInt(),
+  ],
+  async (req, res) => {
+    let userID = isLoggedIn(req, res);
+    if (!userID) {
+      return res.redirect("/login");
+    }
+
+    let admin = await isAdmin(userID);
+    if (!admin) {
+      return res.redirect("/");
+    }
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.redirect("/admin/event/" + req.query.event);
+    }
+
+    let kid = await getKid(req.query.kid);
+    if (!kid) {
+      return res.redirect("/admin/event/edit?event=" + req.query.event);
+    }
+
+    return res.render("edit-kid", {
+      loggedIn: userID,
+      kid,
+      shelters,
+    });
+  }
+);
+
+app.post(
+  "/admin/kid-edit",
+  [
+    check("id", "ID is required").isInt(),
+    check("event", "Event ID is required").isInt(),
+    check("name", "Name is required").trim().escape().notEmpty(),
+    check("shelter", "Shelter is required").isInt(),
+    check("age", "Age is required").isInt(),
+    check("gender").trim().escape(),
+    check("shirt_size").trim().escape(),
+    check("pant_size").trim().escape(),
+    check("color").trim().escape(),
+    check("comments").trim().escape(),
+    check("internal").trim().escape(),
+    check("added", "Added is required")
+      .optional({ checkFalsy: true })
+      .isIn(["on", "off", "true", "false"])
+      .withMessage("Invalid value for added"),
+  ],
+  async (req, res) => {
+    let userID = isLoggedIn(req, res);
+    if (!userID) {
+      return res.redirect("/login");
+    }
+
+    let admin = await isAdmin(userID);
+    if (!admin) {
+      return res.redirect("/");
+    }
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      const kid = {
+        id: req.body.id,
+        event: req.body.event,
+        name: req.body.name,
+        shelter: req.body.shelter,
+        age: req.body.age,
+        gender: req.body.gender,
+        shirt_size: req.body.shirt_size,
+        pant_size: req.body.pant_size,
+        color: req.body.color,
+        comments: req.body.comments,
+        internal: req.body.internal,
+        added: req.body.added,
+      };
+      return res.render("edit-kid", {
+        loggedIn: userID,
+        errors: errors.array(),
+        kid,
+        shelters,
+      });
+    }
+
+    if (req.body.added === "on" || req.body.added === "true") {
+      req.body.added = true;
+    } else {
+      req.body.added = false;
+    }
+
+    const kid = {
+      id: req.body.id,
+      event: req.body.event,
+      name: req.body.name,
+      shelter: req.body.shelter,
+      age: req.body.age,
+      gender: req.body.gender,
+      shirt_size: req.body.shirt_size,
+      pant_size: req.body.pant_size,
+      color: req.body.color,
+      comments: req.body.comments,
+      internal: req.body.internal,
+      added: req.body.added,
+    };
+
+    await updateKid(req.body.id, kid);
+
+    console.log(`Edited kid ${req.body.id} for event ${kid.event}`);
+
+    return res.redirect(`/admin/event/${req.body.event}`);
+  }
+);
+
+app.get(
+  "/admin/kid/delete",
+  [
+    check("kid", "Missing kid ID").isInt(),
+    check("event", "Missing event ID").isInt(),
+  ],
+  async (req, res) => {
+    let userID = isLoggedIn(req, res);
+    if (!userID) {
+      return res.redirect("/login");
+    }
+
+    let admin = await isAdmin(userID);
+    if (!admin) {
+      return res.redirect("/");
+    }
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.redirect("/admin/event/" + req.query.event);
+    }
+
+    await deleteKid(req.query.kid);
+
+    console.log(`Deleted kid ${req.query.kid}`);
+
+    return res.redirect(`/admin/event/${req.query.event}`);
+  }
+);
+
+app.get(
+  "/admin/kid/approve",
+  [
+    check("kid", "Missing kid ID").isInt(),
+    check("event", "Missing event ID").isInt(),
+  ],
+  async (req, res) => {
+    let userID = isLoggedIn(req, res);
+    if (!userID) {
+      return res.status(401).json({ error: "User not logged in" });
+    }
+
+    let admin = await isAdmin(userID);
+    if (!admin) {
+      return res.status(403).json({ error: "User not an admin" });
+    }
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ error: JSON.stringify(errors.array()) });
+    }
+
+    await approveKid(req.query.kid);
+
+    console.log(`Approved kid ${req.query.kid}`);
+
+    return res.status(200).json({ success: true });
   }
 );
 

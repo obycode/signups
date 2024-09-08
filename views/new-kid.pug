@@ -1,0 +1,27 @@
+html
+  head
+    title Empower4Life Signups - Add Kid
+    meta(charset="utf-8")
+    meta(name="viewport" content="width=device-width, initial-scale=1, user-scalable=no")
+    link(rel="stylesheet" href="/assets/css/main.css")
+  body(class="landing is-preload")
+    - var title = 'Add Kid';
+    include header
+    .outer-main
+      main
+        section(class="Main-content")
+          if errors
+            .errors
+              ul
+              each error in errors
+                li #{error.msg}
+
+          form.signup(method="POST" action="/add-kid")
+            include kid-form.pug
+            input#code.form-control(type='hidden' name='code' value=code)
+
+            .center
+              button(type='submit' class='button-style button-style2') Add Kid
+              p 
+                a(href='/admin/event/' + kid.event) cancel
+    include footer

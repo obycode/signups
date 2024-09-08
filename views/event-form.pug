@@ -1,0 +1,79 @@
+.form-group
+  label(for='title') Title:
+  input#title.form-control(type='text' name='title' required value=event.title || '')
+
+.form-group
+  label(for='summary') Summary (shows in event list):
+  input#summary.form-control(type='text' name='summary' value=event.summary || '')
+
+.form-group
+  label(for='description') Description (HTML allowed; shows on event page):
+  textarea#description.form-control(name='description' required cols='30' rows='12')
+    | #{event.description || ''}
+
+.form-group
+  label(for='email_info') Email Info (HTML allowed; details only shown after signup confirmed):
+  textarea#email_info.form-control(name='email_info' cols='30' rows='12')
+    | #{event.email_info || ''}
+
+.form-group
+  label(for='image') Image:
+  input#image.form-control(type='file' name='image')
+
+.form-group
+  label(for='active') Active:
+  if event.active
+    input#active.form-control(type='checkbox' name='active' checked)
+  else
+    input#active.form-control(type='checkbox' name='active')
+
+.form-group
+  label(for='adopt_signup') Is this an adopt-a-child signup?
+  input#adopt_signup(type='checkbox' name='adopt_signup' class='toggle-switch' checked=event.adopt_signup)
+  label(for='adopt_signup' class='toggle-switch-label')
+
+// Adopt-a-Child Settings section, hidden or shown based on the event
+#adopt-settings(style=event.adopt_signup ? 'display:block;' : 'display:none;')
+  fieldset
+    legend Adopt-a-Child Settings (optional)
+    p
+      | For events with adopt-a-child type signups, please fill out the following fields for displaying the signups.
+    ul
+      li \#{id}
+      li \#{name}
+      li \#{shelter_name}
+      li \#{age}
+      li \#{gender}
+      li \#{shirt_size}
+      li \#{pant_size}
+      li \#{color}
+      li \#{comments}
+      li \#{internal}
+    .form-group
+      label(for='kid_title') Title Template:
+      input#kid_title.form-control(type='text' name='kid_title' value=event.kid_title || 'Child \#{id}')
+    .form-group
+      label(for='kid_notes') Notes Template:
+      textarea#kid_notes.form-control(name='kid_notes' cols='30' rows='12')
+        | #{event.kid_notes || '\#{age} year old \#{gender}'}
+    .form-group
+      label(for='kid_email_info') Email Info Template (details only shown after signup confirmed, HTML allowed):
+      textarea#kid_email_info.form-control(name='kid_email_info' cols='30' rows='12')
+        if event.kid_email_info
+          | #{event.kid_email_info}
+        else
+          | <ul>
+          |   <li> Child ID: \#{id} (used to label your donations, see below)</li>
+          |   <li>Age: \#{age}</li>
+          |   <li>Gender: \#{gender}</li>
+          |   <li>Shirt Size: \#{shirt_size}</li>
+          |   <li>Pant Size: \#{pant_size}</li>
+          |   <li>Favorite Color: \#{color}</li>
+          |   <li>Comments: \#{comments}</li>
+          | </ul>
+    .form-group
+      label(for='kid_needed') Signups per Child:
+      input#needed.form-control(type='number' name='kid_needed' value=event.kid_needed || 1)
+// Hidden input for event ID, for editing case
+if event.id
+  input#id.form-control(type='hidden' name='id' value=event.id)

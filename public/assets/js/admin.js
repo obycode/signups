@@ -63,13 +63,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Handle the CSV file generation
   document.querySelectorAll(".download-csv").forEach((link) => {
-    console.log("got link", link);
     link.addEventListener("click", function (e) {
       e.preventDefault();
 
       const tableId = this.getAttribute("data-table-id");
       const table = document.getElementById(tableId);
-      console.log("got table", table);
       const rows = Array.from(table.querySelectorAll("tr"));
       const csvContent = rows
         .map((row) => {
@@ -79,7 +77,6 @@ document.addEventListener("DOMContentLoaded", () => {
             .join(",");
         })
         .join("\n");
-      console.log("got csv content", csvContent);
 
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
       const downloadLink = document.createElement("a");
@@ -105,6 +102,79 @@ document.addEventListener("DOMContentLoaded", () => {
       } else {
         section.style.display = "none";
       }
+    });
+  });
+
+  // Handle pending edit button click
+  const editLinks = document.querySelectorAll(".edit-kid-link");
+  editLinks.forEach((link) => {
+    link.addEventListener("click", function (event) {
+      event.preventDefault();
+      const eventId = this.getAttribute("data-event");
+      const kidId = this.getAttribute("data-kid");
+      const url = `/admin/kid/edit?event=${eventId}&kid=${kidId}`;
+      window.location.href = url;
+    });
+  });
+
+  // Handle pending kid delete button click
+  const deleteKidLinks = document.querySelectorAll(".delete-kid-link");
+  deleteKidLinks.forEach((link) => {
+    link.addEventListener("click", function (event) {
+      event.preventDefault();
+      const eventId = this.getAttribute("data-event");
+      const kidId = this.getAttribute("data-kid");
+      const url = `/admin/kid/delete?event=${eventId}&kid=${kidId}`;
+      if (confirm("Are you sure you want to delete this item?")) {
+        window.location.href = url;
+      }
+    });
+  });
+
+  // Handle pending kid approve button click
+  const approveKidLinks = document.querySelectorAll(".approve-kid-link");
+  approveKidLinks.forEach((link) => {
+    link.addEventListener("click", function (event) {
+      event.preventDefault();
+      const eventId = this.getAttribute("data-event");
+      const kidId = this.getAttribute("data-kid");
+      const url = `/admin/kid/approve?event=${eventId}&kid=${kidId}`;
+      fetch(url, {
+        method: "GET",
+        credentials: "same-origin", // Ensures cookies are sent with the request
+      })
+        .then((response) => {
+          if (response.ok) {
+            const kidRow = link.closest("tr");
+
+            // Remove the kid from the pending kids table
+            const pendingTableBody = document.querySelector(
+              "#pending-kids-table tbody"
+            );
+            pendingTableBody.removeChild(kidRow);
+
+            // Remove the actions column (last td element in the row)
+            const actionsCell = kidRow.querySelector("td:last-child");
+            if (actionsCell) {
+              kidRow.removeChild(actionsCell);
+            }
+
+            // Add the kid to the kids table
+            const kidsTableBody = document.querySelector("#kids-table tbody");
+            kidsTableBody.appendChild(kidRow);
+
+            // Check if there are no more pending kids, and hide the section if necessary
+            if (pendingTableBody.children.length === 0) {
+              document.querySelector("#pending-kids-section").style.display =
+                "none";
+            }
+          } else {
+            console.error("Failed to approve kid.");
+          }
+        })
+        .catch((error) => {
+          console.error("Error:", error);
+        });
     });
   });
 });

@@ -18,9 +18,9 @@ html
           if item.email_info
             p !{item.email_info}
           if item.start_time && item.end_time
-            p #{item.start_time} - #{item.end_time}
+            p #{item.start} - #{item.end}
           else if item.end_time
-            p Deadline: #{item.end_time}
+            p Deadline: #{item.end}
           p !{item.notes}
           if item.emailInfo
             p !{item.emailInfo}

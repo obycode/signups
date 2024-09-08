@@ -200,6 +200,15 @@ legend {
   padding: 0;
 }
 
+fieldset p,
+fieldset ul {
+  font-style: italic;
+}
+
+fieldset li {
+  font-weight: bold;
+}
+
 textarea {
   overflow: auto;
 }
@@ -897,16 +906,16 @@ th.sortable {
 }
 
 th.sortable:after {
-  content: '\25b2'; /* Up arrow */
+  content: "\25b2"; /* Up arrow */
   padding-left: 10px;
 }
 
 th.sortable.asc:after {
-  content: '\25b2'; /* Up arrow */
+  content: "\25b2"; /* Up arrow */
 }
 
 th.sortable.desc:after {
-  content: '\25bc'; /* Down arrow */
+  content: "\25bc"; /* Down arrow */
 }
 
 small a {
@@ -916,6 +925,56 @@ small a {
   margin-left: 10px;
   text-transform: none;
   border: none;
+}
+
+/* Hide the actual checkbox */
+input[type="checkbox"].toggle-switch {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+/* Create the toggle appearance using the label */
+.toggle-switch-label {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 20px;
+  cursor: pointer;
+}
+
+.toggle-switch-label::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 40px;
+  height: 20px;
+  background-color: #ccc;
+  border-radius: 20px;
+  transition: background-color 0.3s;
+}
+
+.toggle-switch-label::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background-color: #fff;
+  border-radius: 50%;
+  transition: transform 0.3s;
+}
+
+/* When the checkbox is checked, change the toggle appearance */
+input[type="checkbox"].toggle-switch:checked + .toggle-switch-label::before {
+  background-color: #4caf50;
+}
+
+input[type="checkbox"].toggle-switch:checked + .toggle-switch-label::after {
+  transform: translateX(20px);
 }
 
 /* Add media queries for responsiveness - when the screen is 500px wide or less, stack the links on top of each other */

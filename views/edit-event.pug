@@ -1,6 +1,6 @@
 html
   head
-    title Empower4Life Signups
+    title Empower4Life Signups - Edit Event
     meta(charset="utf-8")
     meta(name="viewport" content="width=device-width, initial-scale=1, user-scalable=no")
     link(rel="stylesheet" href="/assets/css/main.css")
@@ -15,31 +15,23 @@ html
               ul
               each error in errors
                 li #{error.msg}
+
           form.signup(method="POST" action="/admin/event-edit" enctype="multipart/form-data")
-            .form-group
-              label(for='title') Title:
-              input#title.form-control(type='text' name='title' required value=event.title)
-            .form-group
-              label(for='summary') Summary (shows in events listing):
-              input#notes.form-control(type='text' name='summary' value=event.summary)
-            .form-group
-              label(for='description') Description (HTML allowed; shows in event page):
-              textarea#notes.form-control(name='description' required cols='30' rows='12')
-                | #{event.description}
-            .form-group
-              label(for='email_info') Email Info (HTML allowed; details only shown after signup confirmed):
-              textarea#email_info.form-control(name='email_info' cols='30' rows='12')
-                | #{event.email_info}
-            .form-group
-              label(for='image') Image:
-              input#image.form-control(type='file' name='image')
-            .form-group
-              label(for='active') Active:
-              if event.active
-                input#active.form-control(type='checkbox' name='active' checked)
-              else
-                input#active.form-control(type='checkbox' name='active')
-            input#id.form-control(type='hidden' name='id' value=event.id)
+            include event-form.pug
+
             .center
               button(type='submit' class='button-style button-style2') Update Event
     include footer
+
+    script.
+      document.addEventListener('DOMContentLoaded', function() {
+        const adoptSignupSelect = document.getElementById('adopt_signup');
+        const adoptSettings = document.getElementById('adopt-settings');
+        adoptSignupSelect.addEventListener('change', function() {
+          if (adoptSignupSelect.checked) {
+            adoptSettings.style.display = 'block';
+          } else {
+            adoptSettings.style.display = 'none';
+          }
+        });
+      });
