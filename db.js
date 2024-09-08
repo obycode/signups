@@ -2,6 +2,7 @@ const dotenv = require("dotenv");
 dotenv.config();
 const Pool = require("pg").Pool;
 const parse = require("pg-connection-string").parse;
+const pug = require("pug");
 
 async function ensureEventsTable(client) {
   const exists = await client.query(`SELECT EXISTS (
@@ -749,7 +750,17 @@ async function approveKid(kid_id) {
     [kid_id]
   );
 
-  // TODO: Add item to event based on this kid and the event settings
+  let kid = await getKid(kid_id);
+  kid.shelter_id = String.fromCharCode(64 + kid.shelter);
+  let event = await getEvent(kid.event);
+  let item = {
+    event_id: kid.event,
+    title: pug.render(`| ${event.kid_title}`, kid),
+    notes: pug.render(event.kid_notes, kid),
+    email_info: pug.render(event.kid_email_info, kid),
+    needed: event.kid_needed,
+  };
+  await createItem(item);
 }
 
 // ADMIN

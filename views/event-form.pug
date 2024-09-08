@@ -41,7 +41,7 @@
     ul
       li \#{id}
       li \#{name}
-      li \#{shelter_name}
+      li \#{shelter_id}
       li \#{age}
       li \#{gender}
       li \#{shirt_size}
@@ -51,26 +51,25 @@
       li \#{internal}
     .form-group
       label(for='kid_title') Title Template:
-      input#kid_title.form-control(type='text' name='kid_title' value=event.kid_title || 'Child \#{id}')
+      input#kid_title.form-control(type='text' name='kid_title' value=event.kid_title || 'Child \#{shelter_id}-\#{id}')
     .form-group
-      label(for='kid_notes') Notes Template:
+      label(for='kid_notes') Notes Template (use pug templating):
       textarea#kid_notes.form-control(name='kid_notes' cols='30' rows='12')
-        | #{event.kid_notes || '\#{age} year old \#{gender}'}
+        | #{event.kid_notes || 'p \#{age} year old \#{gender}'}
     .form-group
-      label(for='kid_email_info') Email Info Template (details only shown after signup confirmed, HTML allowed):
+      label(for='kid_email_info') Email Info Template (details only shown after signup confirmed, use pug templating):
       textarea#kid_email_info.form-control(name='kid_email_info' cols='30' rows='12')
         if event.kid_email_info
           | #{event.kid_email_info}
         else
-          | <ul>
-          |   <li> Child ID: \#{id} (used to label your donations, see below)</li>
-          |   <li>Age: \#{age}</li>
-          |   <li>Gender: \#{gender}</li>
-          |   <li>Shirt Size: \#{shirt_size}</li>
-          |   <li>Pant Size: \#{pant_size}</li>
-          |   <li>Favorite Color: \#{color}</li>
-          |   <li>Comments: \#{comments}</li>
-          | </ul>
+          | ul
+          |   li Child ID: \#{shelter_id}-\#{id} (used to label your donations, see below)
+          |   li Age: \#{age}
+          |   li Gender: \#{gender}
+          |   li Shirt Size: \#{shirt_size}
+          |   li Pant Size: \#{pant_size}
+          |   li Favorite Color: \#{color}
+          |   li Comments: \#{comments}
     .form-group
       label(for='kid_needed') Signups per Child:
       input#needed.form-control(type='number' name='kid_needed' value=event.kid_needed || 1)
