@@ -41,6 +41,7 @@ const {
   getEvent,
   updateEvent,
   deleteEvent,
+  activateEvent,
   getSignupsForEvent,
   getItem,
   createSignup,
@@ -628,6 +629,38 @@ app.get("/admin/event/new", async (req, res) => {
     event: {},
   });
 });
+
+app.get(
+  "/admin/event/activate",
+  [
+    check("event", "Missing event ID").isInt(),
+    check("active", "Active is required").isBoolean(),
+  ],
+  async (req, res) => {
+    let userID = isLoggedIn(req, res);
+    if (!userID) {
+      return res.redirect("/login");
+    }
+
+    let admin = await isAdmin(userID);
+    if (!admin) {
+      return res.redirect("/");
+    }
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.redirect("/admin/event/" + req.query.event);
+    }
+
+    await activateEvent(req.query.event, req.query.active);
+
+    console.log(
+      `Updated event ${req.query.event} active status to ${req.query.active}`
+    );
+
+    return res.redirect(`/admin/event/${req.query.event}`);
+  }
+);
 
 app.post(
   "/admin/event",

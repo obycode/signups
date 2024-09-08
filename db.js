@@ -288,6 +288,17 @@ async function updateEvent(event_id, event) {
   await pool.query(query, values);
 }
 
+async function activateEvent(event_id, active) {
+  await pool.query(
+    `
+    UPDATE events
+    SET active = $1
+    WHERE id = $2
+  `,
+    [active, event_id]
+  );
+}
+
 async function deleteEvent(event_id) {
   await pool.query(
     `
@@ -810,6 +821,7 @@ module.exports = {
   countNeededForEvent,
   updateEvent,
   deleteEvent,
+  activateEvent,
   createUser,
   getUser,
   getUserByEmail,

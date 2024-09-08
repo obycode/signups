@@ -16,6 +16,11 @@ html
           p !{event.description}
           p
             a(href="/admin/event/edit?event=" + event.id class="button-style button-style1") Edit Event
+            | 
+            if event.active
+              a(href="/admin/event/activate?active=false&event=" + event.id class="button-style button-style3") Deactivate
+            else
+              a(href="/admin/event/activate?active=true&event=" + event.id class="button-style button-style2") Activate
         section(class="event-details")
           h3 Total: #{total_signups} signups / #{total_needed} needed
           if Object.keys(summary).length
