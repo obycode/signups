@@ -509,11 +509,11 @@ async function getMagicCodeForUser(user_id) {
 async function createSignup(signup) {
   const result = await pool.query(
     `
-    INSERT INTO signups (item_id, user_id, quantity)
-    VALUES ($1, $2, $3)
+    INSERT INTO signups (item_id, user_id, quantity, comment)
+    VALUES ($1, $2, $3, $4)
     RETURNING id
   `,
-    [signup.item_id, signup.user_id, signup.quantity]
+    [signup.item_id, signup.user_id, signup.quantity, signup.comment]
   );
   return result.rows[0].id;
 }
