@@ -296,35 +296,15 @@ app.get("/user", async (req, res) => {
 
   // Retrieve the active signups
   let signups = await getActiveSignupsForUser(userID);
+  signups = signups.map(setTimes);
 
   // Retrieve the inactive signups
   let inactive = await getInactiveSignupsForUser(userID);
+  inactive = inactive.map(setTimes);
 
   res.render("user", {
-    signups: await Promise.all(
-      signups.map(async (signup) => {
-        return {
-          id: signup.id,
-          title: signup.item_title,
-          count: signup.quantity,
-          start: signup.start_time,
-          end: signup.end_time,
-          notes: signup.notes,
-        };
-      })
-    ),
-    inactive: await Promise.all(
-      inactive.map(async (signup) => {
-        return {
-          id: signup.id,
-          title: signup.item_title,
-          count: signup.quantity,
-          start: signup.start_time,
-          end: signup.end_time,
-          notes: signup.notes,
-        };
-      })
-    ),
+    signups,
+    inactive,
     success: req.query.success,
     loggedIn: userID,
   });

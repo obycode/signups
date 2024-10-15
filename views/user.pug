@@ -18,26 +18,26 @@ html
         each signup in signups
           .row
             .column
-              if signup.title
-                h3 #{signup.title}
+              if signup.item_title
+                h3 #{signup.item_title}
               if signup.start && signup.end
                 p #{signup.start} - #{signup.end}
               else if signup.end
                 p Deadline: #{signup.end}
               p !{signup.notes}
             .column.box
-              p #[strong Signed up for:] #{signup.count}
+              p #[strong Signed up for:] #{signup.quantity}
               button(type='submit' class="button-style" onclick=`cancelSignup('${signup.id}');`) Cancel
           hr
         h2 Previous Signups
         each signup in inactive
           .row
             .column
-              h3 #{signup.title}
+              h3 #{signup.item_title}
               if signup.start
                 p #{signup.start} - #{signup.end}
               p !{signup.notes}
             .column.box
-              p #[strong Signed up for:] #{signup.count}
+              p #[strong Signed up for:] #{signup.quantity}
           hr
       include footer
