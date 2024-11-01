@@ -237,7 +237,7 @@ async function getEvents() {
   try {
     const result = await pool.query(
       `
-        SELECT * FROM events
+        SELECT * FROM events ORDER BY active DESC, id DESC
       `
     );
     return result.rows;
