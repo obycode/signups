@@ -27,6 +27,7 @@ const s3 = new S3Client({
 
 const {
   init: dbInit,
+  getEvents,
   getActiveEvents,
   getActiveSignupsForUser,
   getInactiveSignupsForUser,
@@ -280,10 +281,12 @@ function setTimes(record) {
 
 app.get("/", async (req, res) => {
   let userID = isLoggedIn(req, res);
+  let admin = await isAdmin(userID);
 
   const events = await getActiveEvents();
   res.render("events", {
     loggedIn: userID,
+    isAdmin: admin,
     events,
   });
 });
@@ -293,6 +296,7 @@ app.get("/user", async (req, res) => {
   if (!userID) {
     return res.redirect("/login");
   }
+  let admin = await isAdmin(userID);
 
   // Retrieve the active signups
   let signups = await getActiveSignupsForUser(userID);
@@ -303,6 +307,8 @@ app.get("/user", async (req, res) => {
   inactive = inactive.map(setTimes);
 
   res.render("user", {
+    loggedIn: userID,
+    isAdmin: admin,
     signups,
     inactive,
     success: req.query.success,
@@ -489,12 +495,15 @@ app.get(
   [check("item", "Missing or invalid item ID").trim().escape()],
   async (req, res) => {
     let userID = isLoggedIn(req, res);
+    let admin = await isAdmin(userID);
+
     let item = await getItem(req.query.item);
     item = setTimes(item);
     let event = await getEvent(item.event_id);
 
     return res.render("signup", {
       loggedIn: userID,
+      isAdmin: admin,
       event,
       item,
     });
@@ -517,6 +526,7 @@ app.post(
         error: "user not logged in",
       });
     }
+    let admin = await isAdmin(userID);
 
     let item_id = req.body.item;
     let quantity = parseInt(req.body.quantity);
@@ -553,6 +563,7 @@ app.post(
 
     return res.render("success", {
       loggedIn: userID,
+      isAdmin: admin,
       item: item,
       count: quantity,
       comment: comment,
@@ -593,6 +604,25 @@ app.delete(
   }
 );
 
+app.get("/admin", async (req, res) => {
+  let userID = isLoggedIn(req, res);
+  if (!userID) {
+    return res.redirect("/login");
+  }
+
+  let admin = await isAdmin(userID);
+  if (!admin) {
+    return res.redirect("/");
+  }
+
+  const events = await getEvents();
+  res.render("admin", {
+    loggedIn: userID,
+    isAdmin: admin,
+    events,
+  });
+});
+
 app.get("/admin/event/new", async (req, res) => {
   let userID = isLoggedIn(req, res);
   if (!userID) {
@@ -606,6 +636,7 @@ app.get("/admin/event/new", async (req, res) => {
 
   return res.render("new-event", {
     loggedIn: userID,
+    isAdmin: admin,
     event: {},
   });
 });
@@ -692,6 +723,7 @@ app.post(
     if (!errors.isEmpty()) {
       return res.render("new-event", {
         loggedIn: userID,
+        isAdmin: admin,
         event,
         errors: errors.array(),
       });
@@ -732,6 +764,7 @@ app.post(
         console.error("Error uploading image to S3:", error);
         return res.status(500).render("new-event", {
           loggedIn: userID,
+          isAdmin: admin,
           event,
           errors: [{ msg: "Error uploading image" }],
         });
@@ -742,6 +775,7 @@ app.post(
     if (!newEvent) {
       return res.render("new-event", {
         loggedIn: userID,
+        isAdmin: admin,
         event,
         errors: [{ msg: "Failed to create event" }],
       });
@@ -779,6 +813,7 @@ app.get(
 
     return res.render("edit-event", {
       loggedIn: userID,
+      isAdmin: admin,
       event,
     });
   }
@@ -832,6 +867,7 @@ app.post(
       };
       return res.render("edit-event", {
         loggedIn: userID,
+        isAdmin: admin,
         errors: errors.array(),
         event,
       });
@@ -885,6 +921,7 @@ app.post(
         console.error("Error uploading image to S3:", error);
         return res.status(500).render("new-event", {
           loggedIn: userID,
+          isAdmin: admin,
           errors: [{ msg: "Error uploading image" }],
         });
       }
@@ -914,6 +951,7 @@ app.get(
 
     return res.render("new-item", {
       loggedIn: userID,
+      isAdmin: admin,
       event: req.query.event,
     });
   }
@@ -955,6 +993,7 @@ app.post(
     if (!errors.isEmpty()) {
       return res.render("new-item", {
         loggedIn: userID,
+        isAdmin: admin,
         errors: errors.array(),
         event: req.body.event,
         item_title: req.body.title,
@@ -980,6 +1019,7 @@ app.post(
     if (!newItem) {
       return res.render("new-item", {
         loggedIn: userID,
+        isAdmin: admin,
         errors: [{ msg: "Failed to create item" }],
       });
     }
@@ -1021,6 +1061,7 @@ app.get(
 
     return res.render("edit-item", {
       loggedIn: userID,
+      isAdmin: admin,
       item,
     });
   }
@@ -1073,6 +1114,7 @@ app.post(
       };
       return res.render("edit-item", {
         loggedIn: userID,
+        isAdmin: admin,
         errors: errors.array(),
         item,
       });
@@ -1177,6 +1219,7 @@ app.get("/admin/event/:id", async (req, res) => {
 
   return res.render("admin-event", {
     loggedIn: userID,
+    isAdmin: admin,
     event,
     signups,
     summary,
@@ -1224,12 +1267,24 @@ app.get(
     check("form_code", "Missing form code").trim().escape(),
   ],
   async (req, res) => {
+    let userID = isLoggedIn(req, res);
+    if (!userID) {
+      return res.redirect("/login");
+    }
+
+    let admin = await isAdmin(userID);
+    if (!admin) {
+      return res.redirect("/");
+    }
+
     let event = await getEvent(req.query.event);
     if (!event || event.form_code != req.query.form_code) {
       return res.status(400).json({ error: "Invalid event ID or form code" });
     }
 
     return res.render("new-kid", {
+      loggedIn: userID,
+      isAdmin: admin,
       event,
       kid: {
         event: req.query.event,
@@ -1318,6 +1373,7 @@ app.get(
 
     return res.render("edit-kid", {
       loggedIn: userID,
+      isAdmin: admin,
       kid,
       shelters,
     });
@@ -1372,6 +1428,7 @@ app.post(
       };
       return res.render("edit-kid", {
         loggedIn: userID,
+        isAdmin: admin,
         errors: errors.array(),
         kid,
         shelters,

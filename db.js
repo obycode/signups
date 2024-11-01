@@ -233,6 +233,20 @@ async function getEvent(event_id) {
   }
 }
 
+async function getEvents() {
+  try {
+    const result = await pool.query(
+      `
+        SELECT * FROM events
+      `
+    );
+    return result.rows;
+  } catch (err) {
+    console.error(err);
+    return [];
+  }
+}
+
 async function getActiveEvents() {
   try {
     const result = await pool.query(
@@ -766,6 +780,10 @@ async function approveKid(kid_id) {
 // ADMIN
 
 async function isAdmin(user_id) {
+  if (!user_id) {
+    return false;
+  }
+
   try {
     const result = await pool.query(
       `
@@ -821,6 +839,7 @@ async function getShelter(shelter_id) {
 module.exports = {
   init,
   createEvent,
+  getEvents,
   getActiveEvents,
   createItem,
   updateItem,
