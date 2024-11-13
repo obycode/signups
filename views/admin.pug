@@ -9,6 +9,8 @@ html
     .outer-main
       main
         section(class="Main-content")
+          .new-container
+            a(class="button-style button-style2 new-event-button" href="/admin/event/new") New Event
           each event in events
             .row(class=event.active ? "" : "inactive")
               .column
