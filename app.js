@@ -1268,14 +1268,7 @@ app.get(
   ],
   async (req, res) => {
     let userID = isLoggedIn(req, res);
-    if (!userID) {
-      return res.redirect("/login");
-    }
-
     let admin = await isAdmin(userID);
-    if (!admin) {
-      return res.redirect("/");
-    }
 
     let event = await getEvent(req.query.event);
     if (!event || event.form_code != req.query.form_code) {
