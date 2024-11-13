@@ -15,6 +15,9 @@ html
               ul
               each error in errors
                 li #{error.msg}
+          if success
+            .success
+              p Form submitted successfully!
 
           form.signup(method="POST" action="/add-kid")
             include kid-form.pug

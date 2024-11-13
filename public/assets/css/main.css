@@ -843,6 +843,16 @@ form.signup {
   margin-bottom: 5px;
 }
 
+.success {
+  margin-bottom: 20px;
+  padding: 10px;
+  background-color: #aaf9e9;
+  border: 1px solid #65cab5;
+  border-radius: 4px;
+  color: black;
+  text-align: center;
+}
+
 .pagination {
   display: flex;
   justify-content: center;

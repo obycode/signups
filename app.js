@@ -1265,6 +1265,7 @@ app.get(
   [
     check("event", "Missing event ID").isInt(),
     check("form_code", "Missing form code").trim().escape(),
+    check("success").optional({ checkFalsy: true }).isBoolean(),
   ],
   async (req, res) => {
     let userID = isLoggedIn(req, res);
@@ -1278,6 +1279,7 @@ app.get(
     return res.render("new-kid", {
       loggedIn: userID,
       isAdmin: admin,
+      success: req.query.success,
       event,
       kid: {
         event: req.query.event,
@@ -1332,7 +1334,7 @@ app.post(
     console.log(`Added kid for event ${req.body.event}`);
 
     return res.redirect(
-      `/add-kids?event=${req.body.event}&form_code=${req.body.code}`
+      `/add-kids?event=${req.body.event}&form_code=${req.body.code}&success=true`
     );
   }
 );
