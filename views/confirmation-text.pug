@@ -1,14 +1,20 @@
 | Thanks for signing up!
 | Here are the details of your signup:
-| #{item.title}
-|
+| #{item.event}
+if item.eventEmailInfo
+  | !{item.eventEmailInfo}
+else
+  | !{item.eventDescription}
+| * Title: #{item.title}
 | * Details: 
 if item.emailInfo
   | !{item.emailInfo}
 else
   | !{item.notes}
-if item.start
+if item.start && item.end
   | * Time: #{item.start} - #{item.end}
+else if item.end
+  | * Deadline: #{item.end}
 | * Signed up for: #{count}
 | * Comment: #{comment}
 |

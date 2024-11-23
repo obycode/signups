@@ -548,7 +548,7 @@ app.post(
     sendConfirmation(
       user.email,
       {
-        event: item.title,
+        event: event.title,
         eventDescription: event.description,
         emailInfo: item.email_info,
         eventEmailInfo: event.email_info,

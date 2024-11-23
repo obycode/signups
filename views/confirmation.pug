@@ -1,10 +1,10 @@
+h2 Thanks for signing up!
+p Here are the details of your signup:
 h2 #{item.event}
 if item.eventEmailInfo
   p !{item.eventEmailInfo}
 else
   p !{item.eventDescription}
-h2 Thanks for signing up!
-p Here are the details of your signup:
 ul
   if item.title
     li #[h3 #{item.title}]
