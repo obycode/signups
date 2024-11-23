@@ -3,6 +3,7 @@ dotenv.config();
 const Pool = require("pg").Pool;
 const parse = require("pg-connection-string").parse;
 const pug = require("pug");
+const { decode } = require("entities");
 
 async function ensureEventsTable(client) {
   const exists = await client.query(`SELECT EXISTS (
@@ -836,6 +837,42 @@ async function getShelter(shelter_id) {
   }
 }
 
+/// Clean up escaped characters in the database
+async function cleanDatabase() {
+  try {
+    const result = await pool.query(
+      "SELECT id, name, gender, shirt_size, pant_size, color, comments, internal FROM kids"
+    );
+    for (const row of result.rows) {
+      const cleanedName = decode(row.name);
+      const cleanedGender = decode(row.gender);
+      const cleanedShirtSize = decode(row.shirt_size);
+      const cleanedPantSize = decode(row.pant_size);
+      const cleanedColor = decode(row.color || "");
+      const cleanedComments = decode(row.comments || "");
+      const cleanedInternal = decode(row.internal || "");
+
+      console.log("Row:", row);
+      await pool.query(
+        "UPDATE kids SET name = $1, gender = $2, shirt_size = $3, pant_size = $4, color = $5, comments = $6, internal = $7 WHERE id = $8",
+        [
+          cleanedName,
+          cleanedGender,
+          cleanedShirtSize,
+          cleanedPantSize,
+          cleanedColor,
+          cleanedComments,
+          cleanedInternal,
+          row.id,
+        ]
+      );
+    }
+    console.log("Database cleaned successfully!");
+  } catch (err) {
+    console.error("Error cleaning database:", err);
+  }
+}
+
 module.exports = {
   init,
   createEvent,
@@ -872,4 +909,5 @@ module.exports = {
   isAdmin,
   getShelters,
   getShelter,
+  cleanDatabase,
 };

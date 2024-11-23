@@ -320,7 +320,7 @@ app.get(
   "/magic",
   [
     check("user", "invalid user").isInt(),
-    check("code", "invalid code").trim().escape(),
+    check("code", "invalid code").trim(),
     check("item").optional({ checkFalsy: true }).isInt(),
   ],
   async (req, res) => {
@@ -414,7 +414,7 @@ app.get(
 app.post(
   "/register",
   [
-    check("name").trim().escape(),
+    check("name").trim(),
     check("email", "Missing or invalid email").isEmail(),
     check("phone", "Invalid phone number")
       .isMobilePhone()
@@ -492,7 +492,7 @@ app.get("/event/:eventID", async (req, res) => {
 
 app.get(
   "/signup",
-  [check("item", "Missing or invalid item ID").trim().escape()],
+  [check("item", "Missing or invalid item ID").trim()],
   async (req, res) => {
     let userID = isLoggedIn(req, res);
     let admin = await isAdmin(userID);
@@ -513,10 +513,10 @@ app.get(
 app.post(
   "/signup",
   [
-    check("item", "Missing or invalid item ID").trim().escape(),
-    check("event", "Missing or invalid event ID").trim().escape(),
+    check("item", "Missing or invalid item ID").trim(),
+    check("event", "Missing or invalid event ID").trim(),
     check("quantity", "Missing or invalid quantity").isInt(),
-    check("comment").trim().escape(),
+    check("comment").trim(),
   ],
   async (req, res) => {
     let userID = isLoggedIn(req, res);
@@ -574,7 +574,7 @@ app.post(
 
 app.delete(
   "/signup",
-  [check("signup", "Missing signup ID").trim().escape()],
+  [check("signup", "Missing signup ID").trim()],
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -677,9 +677,9 @@ app.post(
   "/admin/event",
   upload.single("image"),
   [
-    check("title", "Title is required").trim().escape().notEmpty(),
+    check("title", "Title is required").trim().notEmpty(),
     check("description", "Description is required").trim().notEmpty(),
-    check("summary", "Summary is required").trim().escape(),
+    check("summary", "Summary is required").trim(),
     check("email_info").trim(),
     check("active", "Active is required")
       .optional({ checkFalsy: true })
@@ -689,8 +689,8 @@ app.post(
       .optional({ checkFalsy: true })
       .isIn(["on", "off", "true", "false"])
       .withMessage("Invalid value for adopt_signup"),
-    check("kid_title").trim().escape().optional(),
-    check("kid_notes").trim().escape().optional(),
+    check("kid_title").trim().optional(),
+    check("kid_notes").trim().optional(),
     check("kid_email_info").trim().optional(),
     check("kid_needed").isInt().optional(),
   ],
@@ -823,9 +823,9 @@ app.post(
   "/admin/event-edit",
   upload.single("image"),
   [
-    check("title", "Title is required").trim().escape().notEmpty(),
+    check("title", "Title is required").trim().notEmpty(),
     check("description", "Description is required").trim().notEmpty(),
-    check("summary").trim().escape(),
+    check("summary").trim(),
     check("email_info").trim(),
     check("active", "Active is required")
       .optional({ checkFalsy: true })
@@ -835,8 +835,8 @@ app.post(
       .optional({ checkFalsy: true })
       .isIn(["on", "off", "true", "false"])
       .withMessage("Invalid value for adopt_signup"),
-    check("kid_title").trim().escape().optional(),
-    check("kid_notes").trim().escape().optional(),
+    check("kid_title").trim().optional(),
+    check("kid_notes").trim().optional(),
     check("kid_email_info").trim().optional(),
     check("kid_needed").isInt().optional(),
   ],
@@ -960,7 +960,7 @@ app.get(
 app.post(
   "/admin/item",
   [
-    check("title", "Title is required").trim().escape().notEmpty(),
+    check("title", "Title is required").trim().notEmpty(),
     check("event", "Event ID is required").isInt(),
     check("needed", "Needed is required").isInt(),
     check("notes").trim(),
@@ -1072,7 +1072,7 @@ app.post(
   [
     check("id", "ID is required").isInt(),
     check("event", "Event ID is required").isInt(),
-    check("title", "Title is required").trim().escape().notEmpty(),
+    check("title", "Title is required").trim().notEmpty(),
     check("needed", "Needed is required").isInt(),
     check("notes").trim(),
     check("email_info").trim(),
@@ -1264,7 +1264,7 @@ app.get(
   "/add-kids",
   [
     check("event", "Missing event ID").isInt(),
-    check("form_code", "Missing form code").trim().escape(),
+    check("form_code", "Missing form code").trim(),
     check("success").optional({ checkFalsy: true }).isBoolean(),
   ],
   async (req, res) => {
@@ -1294,16 +1294,16 @@ app.post(
   "/add-kid",
   [
     check("event", "Event ID is required").isInt(),
-    check("name", "Name is required").trim().escape().notEmpty(),
+    check("name", "Name is required").trim().notEmpty(),
     check("shelter", "Shelter is required").isInt(),
     check("age", "Age is required").isInt(),
-    check("gender").trim().escape(),
-    check("shirt_size").trim().escape(),
-    check("pant_size").trim().escape(),
-    check("color").trim().escape(),
-    check("comments").trim().escape(),
-    check("internal").trim().escape(),
-    check("code", "Missing form code").trim().escape(),
+    check("gender").trim(),
+    check("shirt_size").trim(),
+    check("pant_size").trim(),
+    check("color").trim(),
+    check("comments").trim(),
+    check("internal").trim(),
+    check("code", "Missing form code").trim(),
   ],
   async (req, res) => {
     let event = await getEvent(req.body.event);
@@ -1380,15 +1380,15 @@ app.post(
   [
     check("id", "ID is required").isInt(),
     check("event", "Event ID is required").isInt(),
-    check("name", "Name is required").trim().escape().notEmpty(),
+    check("name", "Name is required").trim().notEmpty(),
     check("shelter", "Shelter is required").isInt(),
     check("age", "Age is required").isInt(),
-    check("gender").trim().escape(),
-    check("shirt_size").trim().escape(),
-    check("pant_size").trim().escape(),
-    check("color").trim().escape(),
-    check("comments").trim().escape(),
-    check("internal").trim().escape(),
+    check("gender").trim(),
+    check("shirt_size").trim(),
+    check("pant_size").trim(),
+    check("color").trim(),
+    check("comments").trim(),
+    check("internal").trim(),
     check("added", "Added is required")
       .optional({ checkFalsy: true })
       .isIn(["on", "off", "true", "false"])
