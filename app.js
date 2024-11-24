@@ -372,7 +372,7 @@ app.get(
       });
     }
 
-    if (req.query.item) {
+    if (req.query.item && req.query.item !== "undefined") {
       res.redirect(`/signup?item=${req.query.item}`);
     } else {
       res.redirect("/user");
@@ -516,7 +516,7 @@ app.post(
       httpOnly: true,
     });
 
-    if (req.body.item) {
+    if (req.body.item && req.body.item !== "undefined") {
       res.redirect(`/signup?item=${req.body.item}`);
     } else {
       res.redirect("/user");
