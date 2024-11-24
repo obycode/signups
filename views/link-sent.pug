@@ -10,7 +10,7 @@ html
     .outer-main
       main
         section(class="Main-content")
-          p Check your email for your magic login link, or enter the one-time password (OTP) sent to you below.
+          p Check your email/text message for your one-time password (OTP) and enter it below.
           if errors
             .errors
               ul
@@ -30,4 +30,5 @@ html
               input(type='hidden' name='item' value=item)
             div.form-group
               button(type='submit' class='button-style button-style2') Verify OTP
+          p If logging in by email, you can also click the magic link in your email to log in directly.
       include footer
