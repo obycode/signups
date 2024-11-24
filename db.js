@@ -264,14 +264,24 @@ async function getActiveEvents() {
 }
 
 async function updateEvent(event_id, event) {
-  const query = `
-    UPDATE events
-    SET title = $1, summary = $2, description = $3, email_info = $4, active = $5,
+  // Dynamically construct the SET clause
+  const setClause = `
+    title = $1, summary = $2, description = $3, email_info = $4, active = $5,
     adopt_signup = $6, kid_title = $7, kid_notes = $8, kid_email_info = $9, kid_needed = $10
-    ${event.image ? "image = $11," : ""}
-    WHERE id = ${event.image ? "$12" : "$11"}
+    ${event.image ? ", image = $11" : ""}
   `;
 
+  // Use the correct positional placeholder for the WHERE clause
+  const whereClause = `WHERE id = ${event.image ? "$12" : "$11"}`;
+
+  // Combine the query
+  const query = `
+    UPDATE events
+    SET ${setClause}
+    ${whereClause}
+  `;
+
+  // Build the values array
   const values = event.image
     ? [
         event.title,
