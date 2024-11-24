@@ -22,8 +22,16 @@ html
                   li #{error.msg}
             form.register(method="POST" action="/login")
               div.form-group
-                label(for='email') Email: 
-                input#email.form-control(type='email' name='email' inputmode='email' autocomplete='email' required value=email)
+                label(for='identifier') Email or Phone (e.g. 4105551212):
+                input#identifier.form-control(
+                  type='text' 
+                  name='identifier' 
+                  inputmode='email' 
+                  autocomplete='username' 
+                  placeholder='Enter email or phone number' 
+                  required
+                  value=identifier
+                )
                 input(type='hidden' name='item' value=item)
               div.form-group
                 button(type='submit' class='button-style button-style2') Get Code

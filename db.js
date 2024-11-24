@@ -4,6 +4,7 @@ const Pool = require("pg").Pool;
 const parse = require("pg-connection-string").parse;
 const pug = require("pug");
 const { decode } = require("entities");
+const crypto = require("crypto");
 
 async function ensureEventsTable(client) {
   const exists = await client.query(`SELECT EXISTS (
@@ -69,7 +70,9 @@ async function ensureUsersTable(client) {
         name TEXT,
         email TEXT,
         phone TEXT,
-        magic_code TEXT
+        magic_code TEXT,
+        login_code VARCHAR(6),
+        login_code_expires TIMESTAMP
       );
     `);
     console.log("Created 'users' table.");
@@ -494,12 +497,16 @@ async function getUser(user_id) {
 
 async function getUserByEmail(email) {
   try {
+    const code = generateTemporaryCode();
+
     const result = await pool.query(
       `
-        SELECT * FROM users
-        WHERE email = $1
+        UPDATE users
+        SET login_code = $1, login_code_expires = NOW() + interval '15 minutes'
+        WHERE email = $2
+        RETURNING *;
       `,
-      [email]
+      [code, email]
     );
 
     if (result.rows.length === 0) {
@@ -511,6 +518,57 @@ async function getUserByEmail(email) {
     console.error(err);
     return null;
   }
+}
+
+async function getUserByPhone(phone) {
+  try {
+    const code = generateTemporaryCode();
+
+    const result = await pool.query(
+      `
+        UPDATE users
+        SET login_code = $1, login_code_expires = NOW() + interval '15 minutes'
+        WHERE phone = $2
+        RETURNING *;
+      `,
+      [code, phone]
+    );
+
+    if (result.rows.length === 0) {
+      return null;
+    }
+
+    return result.rows[0];
+  } catch (err) {
+    console.error(err);
+    return null;
+  }
+}
+
+async function checkUserOTP(user_id, otp) {
+  try {
+    const result = await pool.query(
+      `
+        SELECT * FROM users
+        WHERE id = $1 AND login_code = $2 AND login_code_expires > NOW()
+      `,
+      [user_id, otp]
+    );
+
+    if (result.rows.length === 0) {
+      return null;
+    }
+
+    return result.rows[0];
+  } catch (err) {
+    console.error(err);
+    return null;
+  }
+}
+
+// Helper function to generate a 6-digit temporary code
+function generateTemporaryCode() {
+  return crypto.randomInt(100000, 999999).toString();
 }
 
 async function getMagicCodeForUser(user_id) {
@@ -902,6 +960,8 @@ module.exports = {
   createUser,
   getUser,
   getUserByEmail,
+  getUserByPhone,
+  checkUserOTP,
   getMagicCodeForUser,
   createSignup,
   getActiveSignupsForUser,

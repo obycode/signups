@@ -1,14 +1,33 @@
 html
-    head
-        title Empower4Life Signups
-        meta(charset="utf-8")
-        meta(name="viewport" content="width=device-width, initial-scale=1, user-scalable=no")
-        link(rel="stylesheet" href="/assets/css/main.css")
-    body(class="landing is-preload")
-      - var title = 'Magic Link Sent';
-      include header
-      .outer-main
-        main
-            section(class="Main-content")
-              p Check your email for your magic login link.
-        include footer
+  head
+    title Empower4Life Signups
+    meta(charset="utf-8")
+    meta(name="viewport" content="width=device-width, initial-scale=1, user-scalable=no")
+    link(rel="stylesheet" href="/assets/css/main.css")
+  body(class="landing is-preload")
+    - var title = 'Magic Link Sent';
+    include header
+    .outer-main
+      main
+        section(class="Main-content")
+          p Check your email for your magic login link, or enter the one-time password (OTP) sent to you below.
+          if errors
+            .errors
+              ul
+                each error in errors
+                  li #{error.msg}
+          form.otp-entry(method="POST" action="/verify-otp")
+            div.form-group
+              label(for='otp') One-Time Password (OTP):
+              input#otp.form-control(
+                type='text' 
+                name='otp' 
+                placeholder='Enter your OTP' 
+                required 
+                maxlength='6'
+              )
+              input(type='hidden' name='user_id' value=user_id)
+              input(type='hidden' name='item' value=item)
+            div.form-group
+              button(type='submit' class='button-style button-style2') Verify OTP
+      include footer

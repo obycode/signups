@@ -35,6 +35,7 @@ const {
   createUser,
   getUser,
   getUserByEmail,
+  getUserByPhone,
   getItemsForEvent,
   countItemsForEvent,
   countNeededForEvent,
@@ -60,6 +61,7 @@ const {
   deleteKid,
   approveKid,
   getShelters,
+  checkUserOTP,
 } = require("./db");
 
 let neon = new neoncrm.Client(
@@ -71,6 +73,11 @@ let neon = new neoncrm.Client(
 // https://github.com/sendgrid/sendgrid-nodejs
 const sgMail = require("@sendgrid/mail");
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+const accountSid = process.env.TWILIO_ACCOUNT_SID;
+const authToken = process.env.TWILIO_AUTH_TOKEN;
+const Twilio = require("twilio");
+const twilio = new Twilio(accountSid, authToken);
 
 app.set("view engine", "pug");
 
@@ -109,24 +116,27 @@ function isLoggedIn(req, res) {
   return jwtPayload.userID;
 }
 
-async function sendMagicLink(email, userID, code, item) {
+async function sendMagicLink(email, userID, code, login_code, item) {
   let link = `${process.env.BASE_URL}/magic?user=${userID}&code=${code}`;
   if (item) {
     link += `&item=${item}`;
   }
-  console.log(`Sending magic link: user=${userID}, item=${item}`);
+  console.log(`Sending login email: user=${userID}, item=${item}`);
   let emailBody = pug.renderFile("views/e4l-mail.pug", {
     title: "Empower4Life Signups",
-    preheader: "Your magic link!",
+    preheader: "Your login info!",
     header: {
       src: "https://images.squarespace-cdn.com/content/v1/5e0f48b1f2de9e7798c9150b/1581484830548-NDTK6YHUVSJILPCCMDPB/FINAL-_2_.png?format=750w",
       alt: "Empower4Life Logo",
     },
-    bodyTop: pug.renderFile("views/magic-link-body.pug"),
+    bodyTop: pug.renderFile("views/magic-link-body.pug", {
+      login_code,
+    }),
     button: {
       url: link,
       text: "Sign in",
     },
+    bodyBottom: pug.renderFile("views/magic-link-footer.pug"),
   });
   emailBody = await inlineCss(emailBody, {
     url: `file://${process.cwd()}/public/`,
@@ -135,8 +145,8 @@ async function sendMagicLink(email, userID, code, item) {
   const msg = {
     to: email,
     from: "Empower4Life <jennifer@empower4lifemd.org>",
-    subject: "Your magic link!",
-    text: pug.renderFile("views/magic-link-text.pug", { link: link }),
+    subject: "Your login info!",
+    text: pug.renderFile("views/magic-link-text.pug", { link, login_code }),
     html: emailBody,
   };
   try {
@@ -144,6 +154,18 @@ async function sendMagicLink(email, userID, code, item) {
   } catch (e) {
     console.log("Error sending mail:", e);
   }
+}
+
+async function sendLoginCode(phone, OTP) {
+  // Send the OTP to the phone number
+  twilio.messages
+    .create({
+      body: `Your one time password for E4L Signups is: ${OTP}`,
+      from: process.env.TWILIO_FROM,
+      to: `+1${phone}`,
+    })
+    .then((message) => console.log("SMS sent"))
+    .catch((e) => console.error("Error sending SMS:", e.code, e.message));
 }
 
 async function sendConfirmation(email, item, count, comment) {
@@ -374,7 +396,19 @@ app.get(
 app.post(
   "/login",
   [
-    check("email", "Missing or invalid email").isEmail(),
+    check("identifier")
+      .notEmpty()
+      .withMessage("Email or phone number is required.")
+      .custom((value) => {
+        const emailRegex = /^\S+@\S+\.\S+$/;
+        const phoneRegex = /^\d{10}$/;
+        if (!emailRegex.test(value) && !phoneRegex.test(value)) {
+          throw new Error(
+            "Must be a valid email or phone number (e.g. 4105551212)."
+          );
+        }
+        return true;
+      }),
     check("item").optional({ checkFalsy: true }).isInt(),
   ],
   async (req, res) => {
@@ -382,24 +416,109 @@ app.post(
     if (!errors.isEmpty()) {
       var data = {
         errors: errors.array(),
+        identifier: req.body.identifier,
         item: req.body.item,
       };
       return res.render("login", data);
     }
 
-    let user = await getUserByEmail(req.body.email);
-    if (!user) {
-      return res.render("register", {
-        email: req.body.email,
-        item: req.body.item,
-        errors: [
-          { msg: "Email address not found. Please register a new account." },
-        ],
+    // Determine if it's an email or phone
+    const emailRegex = /^\S+@\S+\.\S+$/;
+    const phoneRegex = /^\d{10}$/;
+
+    let loginType;
+    if (emailRegex.test(req.body.identifier)) {
+      loginType = "email";
+    } else if (phoneRegex.test(req.body.identifier)) {
+      loginType = "phone";
+    }
+
+    // Query the database based on the type
+    let user;
+    if (loginType === "email") {
+      user = await getUserByEmail(req.body.identifier);
+      if (!user) {
+        return res.render("register", {
+          email: req.body.email,
+          item: req.body.item,
+          errors: [
+            { msg: "Email address not found. Please register a new account." },
+          ],
+        });
+      }
+      sendMagicLink(
+        user.email,
+        user.id,
+        user.magic_code,
+        user.login_code,
+        req.body.item
+      );
+    } else if (loginType === "phone") {
+      user = await getUserByPhone(req.body.identifier);
+      if (!user) {
+        return res.render("register", {
+          phone: req.body.phone,
+          item: req.body.item,
+          errors: [
+            { msg: "Phone number not found. Please register a new account." },
+          ],
+        });
+      }
+      sendLoginCode(user.phone, user.login_code);
+    }
+
+    res.render("link-sent", { user_id: user.id, item: req.body.item });
+  }
+);
+
+app.post(
+  "/verify-otp",
+  [
+    check("otp")
+      .notEmpty()
+      .withMessage("OTP is required.")
+      .isLength({ min: 6, max: 6 })
+      .withMessage("OTP must be exactly 6 digits.")
+      .isNumeric()
+      .withMessage("OTP must contain only numbers."),
+    check("user_id").notEmpty().withMessage("User ID is required."),
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.render("link-sent", {
+        errors: errors.array(),
       });
     }
-    sendMagicLink(req.body["email"], user.id, user.magic_code, req.body.item);
 
-    res.render("link-sent");
+    const user = await checkUserOTP(req.body.user_id, req.body.otp);
+
+    if (!user) {
+      return res.render("login", {
+        errors: [{ msg: "Invalid or expired OTP." }],
+        item: req.body.item,
+      });
+    }
+
+    const token = jwt.sign(
+      { userID: req.body.user_id },
+      process.env.JWT_SECRET,
+      {
+        algorithm: "HS256",
+        expiresIn: "14d",
+      }
+    );
+
+    res.cookie("token", token, {
+      maxAge: 14 * 24 * 60 * 60 * 1000,
+      httpOnly: true,
+    });
+
+    if (req.body.item) {
+      res.redirect(`/signup?item=${req.body.item}`);
+    } else {
+      res.redirect("/user");
+    }
   }
 );
 
