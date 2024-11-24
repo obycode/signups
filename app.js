@@ -488,6 +488,8 @@ app.post(
     if (!errors.isEmpty()) {
       return res.render("link-sent", {
         errors: errors.array(),
+        user_id: req.body.user_id,
+        item: req.body.item,
       });
     }
 
@@ -536,9 +538,22 @@ app.post(
     check("name").trim(),
     check("email", "Missing or invalid email").isEmail(),
     check("phone", "Invalid phone number")
-      .isMobilePhone()
-      .optional({ nullable: true, checkFalsy: true }),
-    check("item").optional({ checkFalsy: true }).isInt(),
+      .optional({ nullable: true, checkFalsy: true })
+      .custom((value) => {
+        if (!/^\d{10}$/.test(value)) {
+          throw new Error("Phone number must be in the format 1112223333");
+        }
+        return true;
+      }),
+    check("item")
+      .optional({ checkFalsy: true })
+      .custom((value) => {
+        if (value === "undefined") return true; // Skip validation if the value is the string "undefined"
+        if (!Number.isInteger(Number(value))) {
+          throw new Error("Invalid value");
+        }
+        return true;
+      }),
   ],
   async (req, res) => {
     const errors = validationResult(req);
@@ -558,9 +573,15 @@ app.post(
 
     // If an account already exists for this email, just send the magic code email
     if (user) {
-      sendMagicLink(req.body["email"], user.id, user.magic_code, req.body.item);
+      sendMagicLink(
+        req.body["email"],
+        user.id,
+        user.magic_code,
+        user.login_code,
+        req.body.item
+      );
 
-      return res.render("link-sent");
+      return res.render("link-sent", { user_id: user.id, item: req.body.item });
     }
 
     // Create a new user
@@ -574,7 +595,7 @@ app.post(
 
     sendMagicLink(req.body["email"], user_id, magicCode, req.body.item);
 
-    res.render("link-sent");
+    res.render("link-sent", { user_id: user.id, item: req.body.item });
   }
 );
 
