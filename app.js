@@ -595,7 +595,7 @@ app.post(
 
     sendMagicLink(req.body["email"], user_id, magicCode, req.body.item);
 
-    res.render("link-sent", { user_id: user.id, item: req.body.item });
+    res.render("link-sent", { user_id, item: req.body.item });
   }
 );
 
