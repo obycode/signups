@@ -72,7 +72,7 @@
           |   li Comments: \#{comments}
     .form-group
       label(for='kid_needed') Signups per Child:
-      input#needed.form-control(type='number' name='kid_needed' value=event.kid_needed || 1)
+      input#needed.form-control(type='number' name='kid_needed' value=event.kid_needed || 0)
 // Hidden input for event ID, for editing case
 if event.id
   input#id.form-control(type='hidden' name='id' value=event.id)

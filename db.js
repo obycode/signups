@@ -315,6 +315,12 @@ async function updateEvent(event_id, event) {
       ];
 
   await pool.query(query, values);
+
+  // If `kid_needed` was updated, update the needed count for all items
+  if (event.kid_needed > 0) {
+    const query = "UPDATE items SET needed = $1 WHERE event_id = $2";
+    await pool.query(query, [event.kid_needed, event_id]);
+  }
 }
 
 async function activateEvent(event_id, active) {
