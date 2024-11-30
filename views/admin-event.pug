@@ -108,6 +108,7 @@ html
                     th(data-sort="pant_size") Pants Size
                     th(data-sort="color") Color
                     th(data-sort="comments") Comments
+                    th(data-sort="Signups") Signups
                     th(data-sort="internal") Internal Notes
                 tbody
                   each kid in kids
@@ -121,6 +122,7 @@ html
                       td #{kid.pant_size}
                       td #{kid.color}
                       td #{kid.comments}
+                      td #{kid.signup_user_names}
                       td #{kid.internal}
           if signups.length
             h3 Signups

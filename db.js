@@ -121,7 +121,8 @@ async function ensureKidsTable(client) {
         color TEXT,
         comments TEXT,
         internal TEXT,
-        added BOOLEAN DEFAULT FALSE
+        added BOOLEAN DEFAULT FALSE,
+        item_id INTEGER
       );
     `);
     console.log("Created 'kids' table.");
@@ -786,12 +787,18 @@ async function getKidsForEvent(event_id) {
   try {
     const result = await pool.query(
       `
-        SELECT kids.*, shelters.name AS shelter_name
+        SELECT 
+          kids.*,
+          shelters.name AS shelter_name,
+          STRING_AGG(users.name, ', ') AS signup_user_names
         FROM kids
         JOIN shelters ON kids.shelter = shelters.id
-        WHERE event = $1
-        AND added = TRUE
-        ORDER BY shelters.name, kids.id
+        LEFT JOIN signups ON kids.item_id = signups.item_id
+        LEFT JOIN users ON signups.user_id = users.id
+        WHERE kids.event = $1
+          AND kids.added = TRUE
+        GROUP BY kids.id, shelters.name
+        ORDER BY shelters.name, kids.id;
       `,
       [event_id]
     );
@@ -833,13 +840,6 @@ async function deleteKid(kid_id) {
 }
 
 async function approveKid(kid_id) {
-  await pool.query(
-    `
-    UPDATE kids SET added = TRUE WHERE id = $1
-  `,
-    [kid_id]
-  );
-
   let kid = await getKid(kid_id);
   kid.shelter_id = String.fromCharCode(64 + kid.shelter);
   let event = await getEvent(kid.event);
@@ -850,7 +850,14 @@ async function approveKid(kid_id) {
     email_info: pug.render(event.kid_email_info, kid),
     needed: event.kid_needed,
   };
-  await createItem(item);
+  let item_id = await createItem(item);
+
+  await pool.query(
+    `
+    UPDATE kids SET added = TRUE, item_id = $1 WHERE id = $2
+  `,
+    [item_id, kid_id]
+  );
 }
 
 // ADMIN

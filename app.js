@@ -1337,7 +1337,7 @@ app.get("/admin/event/:id", async (req, res) => {
   let summary = {};
   total_needed = 0;
   total_signups = 0;
-  if (items.length < 20) {
+  if (kids.length == 0) {
     items.forEach((item) => {
       total_needed += item.needed;
       summary[item.id] = {
