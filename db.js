@@ -797,6 +797,7 @@ async function getKidsForEvent(event_id) {
         LEFT JOIN users ON signups.user_id = users.id
         WHERE kids.event = $1
           AND kids.added = TRUE
+          AND signups.canceled_at IS NULL
         GROUP BY kids.id, shelters.name
         ORDER BY shelters.name, kids.id;
       `,
