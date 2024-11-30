@@ -99,6 +99,7 @@ html
               table#kids-table
                 thead
                   tr
+                    th(data-sort="shelter-id" class="sortable") Shelter ID
                     th(data-sort="id" class="sortable") ID
                     th(data-sort="shelter" class="sortable") Shelter
                     th(data-sort="name") Name
@@ -108,11 +109,12 @@ html
                     th(data-sort="pant_size") Pants Size
                     th(data-sort="color") Color
                     th(data-sort="comments") Comments
-                    th(data-sort="Signups") Signups
+                    th(data-sort="signups") Signups
                     th(data-sort="internal") Internal Notes
                 tbody
                   each kid in kids
                     tr
+                      td #{kid.shelter_id}
                       td #{kid.id}
                       td #{kid.shelter_name}
                       td #{kid.name}

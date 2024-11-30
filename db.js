@@ -789,6 +789,7 @@ async function getKidsForEvent(event_id) {
       `
         SELECT 
           kids.*,
+          CHR(64 + kids.shelter) AS shelter_id,
           shelters.name AS shelter_name,
           STRING_AGG(users.name, ', ') AS signup_user_names
         FROM kids
