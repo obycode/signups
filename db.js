@@ -27,7 +27,8 @@ async function ensureEventsTable(client) {
         kid_title TEXT,
         kid_notes TEXT,
         kid_email_info TEXT,
-        kid_needed INTEGER
+        kid_needed INTEGER,
+        allow_kids BOOLEAN DEFAULT TRUE
       );
     `);
     console.log("Created 'events' table.");

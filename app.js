@@ -1412,7 +1412,7 @@ app.get(
     let admin = await isAdmin(userID);
 
     let event = await getEvent(req.query.event);
-    if (!event || event.form_code != req.query.form_code) {
+    if (!event || event.form_code != req.query.form_code || !event.allow_kids) {
       return res.status(400).json({ error: "Invalid event ID or form code" });
     }
 
@@ -1447,7 +1447,7 @@ app.post(
   ],
   async (req, res) => {
     let event = await getEvent(req.body.event);
-    if (!event || event.form_code != req.body.code) {
+    if (!event || event.form_code != req.body.code || !event.allow_kids) {
       return res.status(400).json({ error: "Invalid event ID or form code" });
     }
 
