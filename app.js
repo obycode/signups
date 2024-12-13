@@ -1349,7 +1349,13 @@ app.get("/admin/event/:id", async (req, res) => {
       };
     });
     signups.forEach((signup) => {
-      total_signups += signup.quantity;
+      const currentSignups = summary[signup.item_id].signups;
+      const neededSignups = summary[signup.item_id].needed;
+      const remainingNeeded = Math.max(neededSignups - currentSignups, 0);
+
+      // Only add the minimum of the signup quantity or the remaining needed to total_signups
+      const toAdd = Math.min(signup.quantity, remainingNeeded);
+      total_signups += toAdd;
       summary[signup.item_id].signups += signup.quantity;
     });
   } else {
