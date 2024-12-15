@@ -15,29 +15,32 @@ html
               img(src=event.image, alt=event.title)
             p !{event.description}
             hr
-            for item in items
-              .row
-                .column
-                  if item.title
-                    h2 #{item.title}
-                  .item
-                    p!= item.notes
-                .column
-                  if item.start && item.end
-                    p #{item.start} - #{item.end}
-                  else if item.end
-                    p Deadline: #{item.end}
-                  if item.signups < item.needed
-                    p
-                      span.slots #{item.signups} of #{item.needed}
-                    p.button-p 
-                      if loggedIn
-                        a(href="/signup?item=" + item.id class="button-style button-style2") Sign Up
-                      else 
-                        a(href="/login?item=" + item.id class="button-style button-style2") Sign Up
-                  else
-                    span.slots Needs Met!
-              hr
+            if event.active
+              p Event is not currently active.
+            else
+              for item in items
+                .row
+                  .column
+                    if item.title
+                      h2 #{item.title}
+                    .item
+                      p!= item.notes
+                  .column
+                    if item.start && item.end
+                      p #{item.start} - #{item.end}
+                    else if item.end
+                      p Deadline: #{item.end}
+                    if item.signups < item.needed
+                      p
+                        span.slots #{item.signups} of #{item.needed}
+                      p.button-p
+                        if loggedIn
+                          a(href="/signup?item=" + item.id class="button-style button-style2") Sign Up
+                        else
+                          a(href="/login?item=" + item.id class="button-style button-style2") Sign Up
+                    else
+                      span.slots Needs Met!
+                hr
           .pagination
             if currentPage > 1
               a(href="?page=" + (currentPage - 1)) Previous
