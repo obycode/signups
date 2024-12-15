@@ -15,7 +15,7 @@ html
               img(src=event.image, alt=event.title)
             p !{event.description}
             hr
-            if event.active
+            if !event.active
               p Event is not currently active.
             else
               for item in items
@@ -41,12 +41,13 @@ html
                     else
                       span.slots Needs Met!
                 hr
-          .pagination
-            if currentPage > 1
-              a(href="?page=" + (currentPage - 1)) Previous
-            span Page #{currentPage} of #{totalPages}
-            if currentPage < totalPages
-              a(href="?page=" + (currentPage + 1)) Next
+          if event.active
+            .pagination
+              if currentPage > 1
+                a(href="?page=" + (currentPage - 1)) Previous
+              span Page #{currentPage} of #{totalPages}
+              if currentPage < totalPages
+                a(href="?page=" + (currentPage + 1)) Next
           .title
             if isAdmin
               a(href="/admin/event/" + event.id) Admin
