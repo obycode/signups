@@ -602,7 +602,7 @@ app.post(
 async function renderEvent(userID, admin, event, page, limit, res) {
   const skip = (page - 1) * limit;
   let items = await getItemsForEvent(event.id, skip, limit);
-  items = items.map(setTimes);
+  items = items.filter((item) => item.active).map(setTimes);
   const totalItems = await countItemsForEvent(event.id);
   const totalPages = Math.ceil(totalItems / limit);
 
@@ -1214,6 +1214,10 @@ app.post(
     check("event", "Event ID is required").isInt(),
     check("title", "Title is required").trim().notEmpty(),
     check("needed", "Needed is required").isInt(),
+    check("active", "Active is required")
+      .optional({ checkFalsy: true })
+      .isIn(["on", "off", "true", "false"])
+      .withMessage("Invalid value for active"),
     check("notes").trim(),
     check("email_info").trim(),
     check("start", "Start time must be valid date")
@@ -1251,6 +1255,7 @@ app.post(
         start_form: req.body.start,
         end_form: req.body.end,
         needed: req.body.needed,
+        active: req.body.active,
       };
       return res.render("edit-item", {
         loggedIn: userID,
@@ -1268,6 +1273,7 @@ app.post(
       start_time: req.body.start,
       end_time: req.body.end,
       needed: req.body.needed,
+      active: req.body.active,
     };
 
     await updateItem(req.body.id, item);
@@ -1346,6 +1352,7 @@ app.get("/admin/event/:id", async (req, res) => {
         title: item.title,
         start: item.start,
         end: item.end,
+        active: item.active,
       };
     });
     signups.forEach((signup) => {

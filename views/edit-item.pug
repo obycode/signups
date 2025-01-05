@@ -38,6 +38,12 @@ html
               input#needed.form-control(type='number' name='needed' value=item.needed)
             input#event.form-control(type='hidden' name='event' value=item.event_id)
             input#id.form-control(type='hidden' name='id' value=item.id)
+            .form-group
+              label(for='active') Active:
+              if item.active
+                input#active.form-control(type='checkbox' name='active' checked)
+              else
+                input#active.form-control(type='checkbox' name='active')
             .center
               button(type='submit' class='button-style button-style2') Update Item
     include footer

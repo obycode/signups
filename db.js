@@ -52,6 +52,7 @@ async function ensureItemsTable(client) {
         start_time TIMESTAMP,
         end_time TIMESTAMP,
         needed INTEGER
+        active BOOLEAN DEFAULT TRUE
       );
     `);
     console.log("Created 'items' table.");
@@ -372,8 +373,8 @@ async function updateItem(item_id, item) {
   await pool.query(
     `
     UPDATE items
-    SET title = $1, notes = $2, email_info = $3, start_time = $4, end_time = $5, needed = $6
-    WHERE id = $7
+    SET title = $1, notes = $2, email_info = $3, start_time = $4, end_time = $5, needed = $6, active = $7
+    WHERE id = $8
   `,
     [
       item.title,
@@ -382,6 +383,7 @@ async function updateItem(item_id, item) {
       item.start_time || null,
       item.end_time || null,
       item.needed,
+      item.active,
       item_id,
     ]
   );
@@ -427,7 +429,7 @@ async function getItemsForEvent(event_id, skip, limit) {
         LEFT JOIN signups ON items.id = signups.item_id AND signups.canceled_at IS NULL
         WHERE event_id = $1
         GROUP BY items.id
-        ORDER BY COALESCE(items.start_time, items.end_time), signups ASC
+        ORDER BY items.active, COALESCE(items.start_time, items.end_time), signups ASC
         LIMIT $2 OFFSET $3;
       `,
       [event_id, limit, skip]

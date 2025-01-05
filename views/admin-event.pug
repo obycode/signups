@@ -43,6 +43,9 @@ html
                         else if item.end
                           br
                           span.time Deadline: #{item.end}
+                        if !item.active
+                          br
+                          span.inactive DISABLED
                     td #{item.needed}
                     td #{item.signups}
                     td
