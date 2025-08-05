@@ -53,7 +53,12 @@ html
                       a(href="#" data-event=event.id data-item=id class="button-style button-style3 delete-link") Delete
           p
             if event.adopt_signup
-              a(href="/add-kids?event=" + event.id + "&form_code=" + event.form_code class="button-style button-style2") Add Kids
+              if event.allow_kids
+                a(href="/add-kids?event=" + event.id + "&form_code=" + event.form_code class="button-style button-style2") Add Kids
+                | 
+                a(href="/admin/event/toggle-kids?event=" + event.id + "&allow_kids=false" class="button-style button-style3") Disable Kid Form
+              else
+                a(href="/admin/event/toggle-kids?event=" + event.id + "&allow_kids=true" class="button-style button-style2") Enable Kid Form
             else
               a(href="/admin/item/new?event=" + event.id class="button-style button-style2") Add Item
           if pending_kids.length

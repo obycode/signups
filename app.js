@@ -813,6 +813,45 @@ app.get(
   }
 );
 
+app.get(
+  "/admin/event/toggle-kids",
+  [
+    check("event", "Missing event ID").isInt(),
+    check("allow_kids", "Allow kids is required").isBoolean(),
+  ],
+  async (req, res) => {
+    let userID = isLoggedIn(req, res);
+    if (!userID) {
+      return res.redirect("/login");
+    }
+
+    let admin = await isAdmin(userID);
+    if (!admin) {
+      return res.redirect("/");
+    }
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.redirect("/admin/event/" + req.query.event);
+    }
+
+    // Get the current event and update only the allow_kids field
+    let event = await getEvent(req.query.event);
+    if (!event) {
+      return res.redirect("/admin");
+    }
+
+    event.allow_kids = req.query.allow_kids === 'true';
+    await updateEvent(req.query.event, event);
+
+    console.log(
+      `Updated event ${req.query.event} allow_kids status to ${req.query.allow_kids}`
+    );
+
+    return res.redirect(`/admin/event/${req.query.event}`);
+  }
+);
+
 app.post(
   "/admin/event",
   upload.single("image"),
@@ -829,6 +868,10 @@ app.post(
       .optional({ checkFalsy: true })
       .isIn(["on", "off", "true", "false"])
       .withMessage("Invalid value for adopt_signup"),
+    check("allow_kids", "Allow kids is required")
+      .optional({ checkFalsy: true })
+      .isIn(["on", "off", "true", "false"])
+      .withMessage("Invalid value for allow_kids"),
     check("kid_title").trim().optional(),
     check("kid_notes").trim().optional(),
     check("kid_email_info").trim().optional(),
@@ -853,6 +896,7 @@ app.post(
       active: req.body.active,
       form_code: uuidv4(),
       adopt_signup: req.body.adopt_signup,
+      allow_kids: req.body.allow_kids,
       kid_title: req.body.kid_title,
       kid_notes: req.body.kid_notes,
       kid_email_info: req.body.kid_email_info,
@@ -878,6 +922,11 @@ app.post(
       req.body.adopt_signup = true;
     } else {
       req.body.adopt_signup = false;
+    }
+    if (req.body.allow_kids === "on" || req.body.allow_kids === "true") {
+      req.body.allow_kids = true;
+    } else {
+      req.body.allow_kids = false;
     }
 
     if (req.file) {
@@ -975,6 +1024,10 @@ app.post(
       .optional({ checkFalsy: true })
       .isIn(["on", "off", "true", "false"])
       .withMessage("Invalid value for adopt_signup"),
+    check("allow_kids", "Allow kids is required")
+      .optional({ checkFalsy: true })
+      .isIn(["on", "off", "true", "false"])
+      .withMessage("Invalid value for allow_kids"),
     check("kid_title").trim().optional(),
     check("kid_notes").trim().optional(),
     check("kid_email_info").trim().optional(),
@@ -1000,6 +1053,7 @@ app.post(
         email_info: req.body.email_info,
         active: req.body.active,
         adopt_signup: req.body.adopt_signup,
+        allow_kids: req.body.allow_kids,
         kid_title: req.body.kid_title,
         kid_notes: req.body.kid_notes,
         kid_email_info: req.body.kid_email_info,
@@ -1023,6 +1077,11 @@ app.post(
     } else {
       req.body.adopt_signup = false;
     }
+    if (req.body.allow_kids === "on" || req.body.allow_kids === "true") {
+      req.body.allow_kids = true;
+    } else {
+      req.body.allow_kids = false;
+    }
 
     const event = {
       title: req.body.title,
@@ -1031,6 +1090,7 @@ app.post(
       email_info: req.body.email_info,
       active: req.body.active,
       adopt_signup: req.body.adopt_signup,
+      allow_kids: req.body.allow_kids,
       kid_title: req.body.kid_title,
       kid_notes: req.body.kid_notes,
       kid_email_info: req.body.kid_email_info,

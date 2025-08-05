@@ -32,6 +32,13 @@
   input#adopt_signup(type='checkbox' name='adopt_signup' class='toggle-switch' checked=event.adopt_signup)
   label(for='adopt_signup' class='toggle-switch-label')
 
+.form-group
+  label(for='allow_kids') Allow new kids to be added via form:
+  if event.allow_kids !== false
+    input#allow_kids.form-control(type='checkbox' name='allow_kids' checked)
+  else
+    input#allow_kids.form-control(type='checkbox' name='allow_kids')
+
 // Adopt-a-Child Settings section, hidden or shown based on the event
 #adopt-settings(style=event.adopt_signup ? 'display:block;' : 'display:none;')
   fieldset

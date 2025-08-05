@@ -198,8 +198,8 @@ async function init() {
 async function createEvent(event) {
   const result = await pool.query(
     `
-    INSERT INTO events (title, summary, description, email_info, image, active, form_code, adopt_signup, kid_title, kid_notes, kid_email_info, kid_needed)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+    INSERT INTO events (title, summary, description, email_info, image, active, form_code, adopt_signup, kid_title, kid_notes, kid_email_info, kid_needed, allow_kids)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
     RETURNING id
   `,
     [
@@ -215,6 +215,7 @@ async function createEvent(event) {
       event.kid_notes,
       event.kid_email_info,
       event.kid_needed,
+      event.allow_kids,
     ]
   );
   return result.rows[0].id;
@@ -273,12 +274,12 @@ async function updateEvent(event_id, event) {
   // Dynamically construct the SET clause
   const setClause = `
     title = $1, summary = $2, description = $3, email_info = $4, active = $5,
-    adopt_signup = $6, kid_title = $7, kid_notes = $8, kid_email_info = $9, kid_needed = $10
-    ${event.image ? ", image = $11" : ""}
+    adopt_signup = $6, kid_title = $7, kid_notes = $8, kid_email_info = $9, kid_needed = $10, allow_kids = $11
+    ${event.image ? ", image = $12" : ""}
   `;
 
   // Use the correct positional placeholder for the WHERE clause
-  const whereClause = `WHERE id = ${event.image ? "$12" : "$11"}`;
+  const whereClause = `WHERE id = ${event.image ? "$13" : "$12"}`;
 
   // Combine the query
   const query = `
@@ -300,6 +301,7 @@ async function updateEvent(event_id, event) {
         event.kid_notes,
         event.kid_email_info,
         event.kid_needed,
+        event.allow_kids,
         event.image,
         event_id,
       ]
@@ -314,6 +316,7 @@ async function updateEvent(event_id, event) {
         event.kid_notes,
         event.kid_email_info,
         event.kid_needed,
+        event.allow_kids,
         event_id,
       ];
 
