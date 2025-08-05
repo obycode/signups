@@ -784,6 +784,27 @@ async function updateKid(kid_id, kid) {
       kid_id,
     ]
   );
+
+  // If this is an approved kid with an associated item, update the item as well
+  if (kid.added && kid.item_id) {
+    kid.shelter_id = String.fromCharCode(64 + kid.shelter);
+    let event = await getEvent(kid.event);
+
+    await pool.query(
+      `
+      UPDATE items
+      SET title = $1, notes = $2, email_info = $3, needed = $4
+      WHERE id = $5
+    `,
+      [
+        pug.render(`| ${event.kid_title}`, kid),
+        pug.render(event.kid_notes, kid),
+        pug.render(event.kid_email_info, kid),
+        event.kid_needed,
+        kid.item_id,
+      ]
+    );
+  }
 }
 
 async function getKidsForEvent(event_id) {
@@ -835,6 +856,10 @@ async function getPendingKidsForEvent(event_id) {
 }
 
 async function deleteKid(kid_id) {
+  // First get the kid to retrieve the item_id
+  const kid = await getKid(kid_id);
+
+  // Delete the kid from the kids table
   await pool.query(
     `
     DELETE FROM kids
@@ -842,6 +867,17 @@ async function deleteKid(kid_id) {
   `,
     [kid_id]
   );
+
+  // If the kid had an associated item, delete it from the items table
+  if (kid && kid.item_id) {
+    await pool.query(
+      `
+      DELETE FROM items
+      WHERE id = $1
+    `,
+      [kid.item_id]
+    );
+  }
 }
 
 async function approveKid(kid_id) {

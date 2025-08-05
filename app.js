@@ -1546,6 +1546,7 @@ app.post(
       .optional({ checkFalsy: true })
       .isIn(["on", "off", "true", "false"])
       .withMessage("Invalid value for added"),
+    check("item_id").optional({ checkFalsy: true }).isInt(),
   ],
   async (req, res) => {
     let userID = isLoggedIn(req, res);
@@ -1602,6 +1603,7 @@ app.post(
       comments: req.body.comments,
       internal: req.body.internal,
       added: req.body.added,
+      item_id: req.body.item_id,
     };
 
     await updateKid(req.body.id, kid);

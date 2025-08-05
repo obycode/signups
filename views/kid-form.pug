@@ -45,4 +45,7 @@ input#code.form-control(type='hidden' name='code' value=kid.code)
 if kid.id
   input#id.form-control(type='hidden' name='id' value=kid.id)
 
-input#added.form-control(type='hidden' name='added' value=kid.added)
+if kid.item_id
+  input#item_id.form-control(type='hidden' name='item_id' value=kid.item_id)
+
+input#added.form-control(type='hidden' name='added' value=kid.added ? 'true' : 'false')
