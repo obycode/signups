@@ -27,11 +27,64 @@ html
       document.addEventListener('DOMContentLoaded', function() {
         const adoptSignupSelect = document.getElementById('adopt_signup');
         const adoptSettings = document.getElementById('adopt-settings');
-        adoptSignupSelect.addEventListener('change', function() {
-          if (adoptSignupSelect.checked) {
-            adoptSettings.style.display = 'block';
-          } else {
-            adoptSettings.style.display = 'none';
+        const selectAllLink = document.getElementById('select-all-shelters');
+
+        function toggleAdoptSettingsVisibility() {
+          if (!adoptSettings) {
+            return;
           }
-        });
+          adoptSettings.style.display = adoptSignupSelect.checked ? 'block' : 'none';
+        }
+
+        function getShelterCheckboxes() {
+          if (!adoptSettings) {
+            return [];
+          }
+          return Array.from(
+            adoptSettings.querySelectorAll('.checkbox-list input[type="checkbox"]')
+          );
+        }
+
+        function updateSelectAllLabel() {
+          if (!selectAllLink) {
+            return;
+          }
+          const checkboxes = getShelterCheckboxes();
+          if (checkboxes.length === 0) {
+            selectAllLink.textContent = 'Select all';
+            return;
+          }
+          const allChecked = checkboxes.every((checkbox) => checkbox.checked);
+          selectAllLink.textContent = allChecked ? 'Clear all' : 'Select all';
+        }
+
+        toggleAdoptSettingsVisibility();
+        updateSelectAllLabel();
+
+        if (adoptSignupSelect) {
+          adoptSignupSelect.addEventListener('change', function() {
+            toggleAdoptSettingsVisibility();
+          });
+        }
+
+        if (selectAllLink) {
+          selectAllLink.addEventListener('click', function(event) {
+            event.preventDefault();
+            const checkboxes = getShelterCheckboxes();
+            if (checkboxes.length === 0) {
+              return;
+            }
+            const allChecked = checkboxes.every((checkbox) => checkbox.checked);
+            checkboxes.forEach((checkbox) => {
+              checkbox.checked = !allChecked;
+            });
+            updateSelectAllLabel();
+          });
+
+          adoptSettings.addEventListener('change', function(event) {
+            if (event.target && event.target.matches('input[type="checkbox"]')) {
+              updateSelectAllLabel();
+            }
+          });
+        }
       });

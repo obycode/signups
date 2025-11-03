@@ -61,6 +61,9 @@ const {
   deleteKid,
   approveKid,
   getShelters,
+  createShelter,
+  setEventShelters,
+  getSheltersForEvent,
   checkUserOTP,
 } = require("./db");
 
@@ -93,10 +96,37 @@ app.use(
 );
 
 let shelters = [];
+
+async function refreshShelters() {
+  shelters = await getShelters();
+}
+
 (async () => {
   await dbInit(false);
-  shelters = await getShelters();
+  await refreshShelters();
 })();
+
+function parseShelterIds(rawShelters) {
+  if (!rawShelters) {
+    return [];
+  }
+
+  const ids = Array.isArray(rawShelters) ? rawShelters : [rawShelters];
+  return ids
+    .map((value) => parseInt(value, 10))
+    .filter((value) => !Number.isNaN(value));
+}
+
+function parseNewShelterNames(rawNames) {
+  if (!rawNames) {
+    return [];
+  }
+
+  return rawNames
+    .split(/\r?\n/)
+    .map((name) => name.trim())
+    .filter((name) => name.length > 0);
+}
 
 function isLoggedIn(req, res) {
   const token = req.cookies.token;
@@ -778,6 +808,8 @@ app.get("/admin/event/new", async (req, res) => {
     loggedIn: userID,
     isAdmin: admin,
     event: {},
+    shelters,
+    eventShelterIds: [],
   });
 });
 
@@ -841,7 +873,7 @@ app.get(
       return res.redirect("/admin");
     }
 
-    event.allow_kids = req.query.allow_kids === 'true';
+    event.allow_kids = req.query.allow_kids === "true";
     await updateEvent(req.query.event, event);
 
     console.log(
@@ -888,6 +920,9 @@ app.post(
       return res.redirect("/");
     }
 
+    const selectedShelterIds = parseShelterIds(req.body.shelters);
+    const newShelterNames = parseNewShelterNames(req.body.new_shelters);
+
     const event = {
       title: req.body.title,
       description: req.body.description,
@@ -901,6 +936,7 @@ app.post(
       kid_notes: req.body.kid_notes,
       kid_email_info: req.body.kid_email_info,
       kid_needed: req.body.kid_needed,
+      selectedShelters: selectedShelterIds,
     };
 
     const errors = validationResult(req);
@@ -909,6 +945,9 @@ app.post(
         loggedIn: userID,
         isAdmin: admin,
         event,
+        shelters,
+        eventShelterIds: selectedShelterIds,
+        newSheltersInput: req.body.new_shelters || "",
         errors: errors.array(),
       });
     }
@@ -955,6 +994,9 @@ app.post(
           loggedIn: userID,
           isAdmin: admin,
           event,
+          shelters,
+          eventShelterIds: selectedShelterIds,
+          newSheltersInput: req.body.new_shelters || "",
           errors: [{ msg: "Error uploading image" }],
         });
       }
@@ -966,8 +1008,43 @@ app.post(
         loggedIn: userID,
         isAdmin: admin,
         event,
+        shelters,
+        eventShelterIds: selectedShelterIds,
+        newSheltersInput: req.body.new_shelters || "",
         errors: [{ msg: "Failed to create event" }],
       });
+    }
+
+    if (event.adopt_signup) {
+      try {
+        const createdShelterIds = [];
+        if (newShelterNames.length > 0) {
+          for (const name of newShelterNames) {
+            const shelter = await createShelter(name);
+            createdShelterIds.push(shelter.id);
+          }
+          await refreshShelters();
+        }
+
+        const shelterIdsForEvent = [
+          ...selectedShelterIds,
+          ...createdShelterIds,
+        ];
+
+        await setEventShelters(newEvent, shelterIdsForEvent);
+      } catch (error) {
+        console.error("Error setting event shelters:", error);
+        await deleteEvent(newEvent);
+        return res.status(500).render("new-event", {
+          loggedIn: userID,
+          isAdmin: admin,
+          event,
+          shelters,
+          eventShelterIds: selectedShelterIds,
+          newSheltersInput: req.body.new_shelters || "",
+          errors: [{ msg: "Failed to associate shelters with event" }],
+        });
+      }
     }
 
     console.log("Created new event:", newEvent);
@@ -1000,10 +1077,15 @@ app.get(
       return res.redirect("/admin");
     }
 
+    const eventShelters = await getSheltersForEvent(event.id);
+    const eventShelterIds = eventShelters.map((shelter) => shelter.id);
+
     return res.render("edit-event", {
       loggedIn: userID,
       isAdmin: admin,
       event,
+      shelters,
+      eventShelterIds,
     });
   }
 );
@@ -1044,9 +1126,13 @@ app.post(
       return res.redirect("/");
     }
 
+    const selectedShelterIds = parseShelterIds(req.body.shelters);
+    const newShelterNames = parseNewShelterNames(req.body.new_shelters);
+
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       const event = {
+        id: req.body.id,
         title: req.body.title,
         description: req.body.description,
         summary: req.body.summary,
@@ -1058,12 +1144,16 @@ app.post(
         kid_notes: req.body.kid_notes,
         kid_email_info: req.body.kid_email_info,
         kid_needed: req.body.kid_needed,
+        selectedShelters: selectedShelterIds,
       };
       return res.render("edit-event", {
         loggedIn: userID,
         isAdmin: admin,
         errors: errors.array(),
         event,
+        shelters,
+        eventShelterIds: selectedShelterIds,
+        newSheltersInput: req.body.new_shelters || "",
       });
     }
 
@@ -1084,6 +1174,7 @@ app.post(
     }
 
     const event = {
+      id: req.body.id,
       title: req.body.title,
       description: req.body.description,
       summary: req.body.summary,
@@ -1095,6 +1186,7 @@ app.post(
       kid_notes: req.body.kid_notes,
       kid_email_info: req.body.kid_email_info,
       kid_needed: req.body.kid_needed,
+      selectedShelters: selectedShelterIds,
     };
 
     if (req.file) {
@@ -1119,15 +1211,65 @@ app.post(
         event.image = `https://${params.Bucket}.s3.${process.env.AWS_REGION}.amazonaws.com/${params.Key}`;
       } catch (error) {
         console.error("Error uploading image to S3:", error);
-        return res.status(500).render("new-event", {
+        return res.status(500).render("edit-event", {
           loggedIn: userID,
           isAdmin: admin,
+          event,
+          shelters,
+          eventShelterIds: selectedShelterIds,
+          newSheltersInput: req.body.new_shelters || "",
           errors: [{ msg: "Error uploading image" }],
         });
       }
     }
 
-    await updateEvent(req.body.id, event);
+    try {
+      await updateEvent(req.body.id, event);
+    } catch (error) {
+      console.error("Error updating event:", error);
+      return res.status(500).render("edit-event", {
+        loggedIn: userID,
+        isAdmin: admin,
+        event,
+        shelters,
+        eventShelterIds: selectedShelterIds,
+        newSheltersInput: req.body.new_shelters || "",
+        errors: [{ msg: "Failed to update event" }],
+      });
+    }
+
+    try {
+      if (event.adopt_signup) {
+        const createdShelterIds = [];
+        if (newShelterNames.length > 0) {
+          for (const name of newShelterNames) {
+            const shelter = await createShelter(name);
+            createdShelterIds.push(shelter.id);
+          }
+          await refreshShelters();
+        }
+
+        const shelterIdsForEvent = [
+          ...selectedShelterIds,
+          ...createdShelterIds,
+        ];
+
+        await setEventShelters(req.body.id, shelterIdsForEvent);
+      } else {
+        await setEventShelters(req.body.id, []);
+      }
+    } catch (error) {
+      console.error("Error updating event shelters:", error);
+      return res.status(500).render("edit-event", {
+        loggedIn: userID,
+        isAdmin: admin,
+        event,
+        shelters,
+        eventShelterIds: selectedShelterIds,
+        newSheltersInput: req.body.new_shelters || "",
+        errors: [{ msg: "Failed to update event shelters" }],
+      });
+    }
 
     console.log(`Edited event ${req.body.id}`);
 
@@ -1489,6 +1631,9 @@ app.get(
       return res.status(400).json({ error: "Invalid event ID or form code" });
     }
 
+    const eventShelters = await getSheltersForEvent(event.id);
+    const sheltersForForm = eventShelters.length > 0 ? eventShelters : shelters;
+
     return res.render("new-kid", {
       loggedIn: userID,
       isAdmin: admin,
@@ -1498,7 +1643,7 @@ app.get(
         event: req.query.event,
         code: req.query.form_code,
       },
-      shelters,
+      shelters: sheltersForForm,
     });
   }
 );
@@ -1579,11 +1724,14 @@ app.get(
       return res.redirect("/admin/event/edit?event=" + req.query.event);
     }
 
+    const eventShelters = await getSheltersForEvent(kid.event);
+    const sheltersForForm = eventShelters.length > 0 ? eventShelters : shelters;
+
     return res.render("edit-kid", {
       loggedIn: userID,
       isAdmin: admin,
       kid,
-      shelters,
+      shelters: sheltersForForm,
     });
   }
 );

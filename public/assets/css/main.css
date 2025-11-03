@@ -513,7 +513,7 @@ a:focus {
   padding: 20 0;
 }
 
-input:not([type="submit"]) {
+input:not([type="submit"]):not([type="checkbox"]):not([type="radio"]) {
   width: 100%;
   padding: 12px 20px;
   margin: 8px 0;
@@ -818,6 +818,42 @@ form.signup {
   box-sizing: border-box;
 }
 
+#adopt-settings fieldset {
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background-color: #fff;
+  padding: 20px;
+  margin-top: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+#adopt-settings legend {
+  font-weight: 600;
+  font-size: 1.1rem;
+  margin-bottom: 12px;
+}
+
+#adopt-settings p {
+  margin-bottom: 8px;
+  font-style: normal;
+  color: #444;
+}
+
+#adopt-settings ul {
+  margin: 0 0 1rem 1.25rem;
+  font-style: normal;
+  color: #5a5a5a;
+}
+
+#adopt-settings li {
+  font-weight: normal;
+  margin-bottom: 0.25rem;
+}
+
+#adopt-settings .form-group {
+  margin-bottom: 18px;
+}
+
 .form-center {
   text-align: center;
   margin-top: 20px;
@@ -1005,6 +1041,52 @@ input[type="checkbox"].toggle-switch:checked + .toggle-switch-label::after {
   margin-left: auto;
 }
 
+.checkbox-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  padding: 0;
+  margin: 0;
+}
+
+.form-group label.checkbox-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 4px 0;
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+  line-height: 1.4;
+  font-weight: 400;
+  width: auto;
+  margin-bottom: 0;
+  flex: 1 1 220px;
+}
+
+.form-group label.checkbox-option:hover {
+  background-color: transparent;
+}
+
+.form-group label.checkbox-option input {
+  margin: 0;
+}
+
+.form-group label.checkbox-option span {
+  display: inline;
+  white-space: normal;
+}
+
+.select-all-link {
+  margin-left: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.select-all-link:focus,
+.select-all-link:hover {
+  text-decoration: underline;
+}
+
 /* Add media queries for responsiveness - when the screen is 500px wide or less, stack the links on top of each other */
 @media screen and (max-width: 767px) {
   .title {
@@ -1027,5 +1109,9 @@ input[type="checkbox"].toggle-switch:checked + .toggle-switch-label::after {
   .column {
     width: 100%;
     padding: 4px;
+  }
+
+  .checkbox-list {
+    flex-direction: column;
   }
 }

@@ -41,6 +41,8 @@
 
 // Adopt-a-Child Settings section, hidden or shown based on the event
 #adopt-settings(style=event.adopt_signup ? 'display:block;' : 'display:none;')
+  - const selectedShelters = (event && event.selectedShelters) ? event.selectedShelters : (typeof eventShelterIds !== 'undefined' ? eventShelterIds : []);
+  - const shelterNotes = (typeof newSheltersInput !== 'undefined') ? newSheltersInput : '';
   fieldset
     legend Adopt-a-Child Settings (optional)
     p
@@ -56,6 +58,22 @@
       li \#{color}
       li \#{comments}
       li \#{internal}
+    .form-group
+      label
+        | Shelters Included:
+        a#select-all-shelters.select-all-link(href='#') Select all
+      if shelters && shelters.length
+        .checkbox-list
+          each shelter in shelters
+            - const isSelected = Array.isArray(selectedShelters) ? selectedShelters.includes(shelter.id) : false;
+            label.checkbox-option
+              input(type='checkbox', name='shelters', value=shelter.id, checked=isSelected)
+              span #{shelter.name}
+      else
+        p No shelters found. Add new shelters below to get started.
+    .form-group
+      label(for='new_shelters') Add New Shelters (one per line):
+      textarea#new_shelters.form-control(name='new_shelters' cols='30' rows='3')= shelterNotes
     .form-group
       label(for='kid_title') Title Template:
       input#kid_title.form-control(type='text' name='kid_title' value=event.kid_title || 'Child \#{shelter_id}-\#{id}')

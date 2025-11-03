@@ -157,10 +157,28 @@ async function ensureSheltersTable(client) {
     await client.query(`
       CREATE TABLE shelters (
         id SERIAL PRIMARY KEY,
-        name TEXT,
+        name TEXT
       );
     `);
     console.log("Created 'shelters' table.");
+  }
+}
+
+async function ensureEventSheltersTable(client) {
+  const exists = await client.query(`SELECT EXISTS (
+    SELECT FROM information_schema.tables
+    WHERE table_name = 'event_shelters'
+  );`);
+
+  if (!exists.rows[0].exists) {
+    await client.query(`
+      CREATE TABLE event_shelters (
+        event_id INTEGER REFERENCES events(id) ON DELETE CASCADE,
+        shelter_id INTEGER REFERENCES shelters(id) ON DELETE CASCADE,
+        PRIMARY KEY (event_id, shelter_id)
+      );
+    `);
+    console.log("Created 'event_shelters' table.");
   }
 }
 
@@ -184,6 +202,7 @@ async function init() {
     ensureKidsTable(client);
     ensureAdminTable(client);
     ensureSheltersTable(client);
+    ensureEventSheltersTable(client);
   } catch (err) {
     console.error("Error initializing tables:", err);
   } finally {
@@ -943,6 +962,71 @@ async function getShelters() {
   }
 }
 
+async function createShelter(name) {
+  const result = await pool.query(
+    `
+      INSERT INTO shelters (name)
+      VALUES ($1)
+      RETURNING id, name
+    `,
+    [name]
+  );
+  return result.rows[0];
+}
+
+async function setEventShelters(event_id, shelter_ids) {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await client.query(
+      `
+        DELETE FROM event_shelters
+        WHERE event_id = $1
+      `,
+      [event_id]
+    );
+
+    if (shelter_ids.length > 0) {
+      const valuesClause = shelter_ids
+        .map((_, idx) => `($1, $${idx + 2})`)
+        .join(", ");
+      await client.query(
+        `
+          INSERT INTO event_shelters (event_id, shelter_id)
+          VALUES ${valuesClause}
+        `,
+        [event_id, ...shelter_ids]
+      );
+    }
+
+    await client.query("COMMIT");
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+async function getSheltersForEvent(event_id) {
+  try {
+    const result = await pool.query(
+      `
+        SELECT shelters.*
+        FROM shelters
+        JOIN event_shelters ON shelters.id = event_shelters.shelter_id
+        WHERE event_shelters.event_id = $1
+        ORDER BY shelters.name
+      `,
+      [event_id]
+    );
+    return result.rows;
+  } catch (err) {
+    console.error(err);
+    return [];
+  }
+}
+
 async function getShelter(shelter_id) {
   try {
     const result = await pool.query(
@@ -1036,6 +1120,9 @@ module.exports = {
   approveKid,
   isAdmin,
   getShelters,
+  createShelter,
+  setEventShelters,
+  getSheltersForEvent,
   getShelter,
   cleanDatabase,
 };
