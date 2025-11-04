@@ -4,6 +4,7 @@ var bodyParser = require("body-parser");
 const express = require("express");
 const app = express();
 const { check, validationResult } = require("express-validator");
+const validator = require("validator");
 const pug = require("pug");
 var inlineCss = require("inline-css");
 const neoncrm = require("@obycode/neoncrm");
@@ -99,6 +100,11 @@ let shelters = [];
 
 async function refreshShelters() {
   shelters = await getShelters();
+}
+
+function getBCPSShelterId() {
+  const bcpsShelter = shelters.find((shelter) => shelter.name === "BCPS");
+  return bcpsShelter ? String(bcpsShelter.id) : null;
 }
 
 (async () => {
@@ -1662,6 +1668,45 @@ app.post(
     check("comments").trim(),
     check("internal").trim(),
     check("code", "Missing form code").trim(),
+    check("additional_contact_name")
+      .trim()
+      .custom((value, { req }) => {
+        const bcpsId = getBCPSShelterId();
+        if (bcpsId && String(req.body.shelter) === bcpsId) {
+          if (!value) {
+            throw new Error("Contact name is required for BCPS");
+          }
+        }
+        return true;
+      }),
+    check("additional_contact_email")
+      .trim()
+      .custom((value, { req }) => {
+        const bcpsId = getBCPSShelterId();
+        const shelterMatches = bcpsId && String(req.body.shelter) === bcpsId;
+        if (shelterMatches) {
+          if (!value) {
+            throw new Error("Contact email is required for BCPS");
+          }
+          if (!validator.isEmail(value)) {
+            throw new Error("Contact email must be valid");
+          }
+        } else if (value && !validator.isEmail(value)) {
+          throw new Error("Contact email must be valid");
+        }
+        return true;
+      }),
+    check("additional_contact_phone")
+      .trim()
+      .custom((value, { req }) => {
+        const bcpsId = getBCPSShelterId();
+        if (bcpsId && String(req.body.shelter) === bcpsId) {
+          if (!value) {
+            throw new Error("Contact cell is required for BCPS");
+          }
+        }
+        return true;
+      }),
   ],
   async (req, res) => {
     let event = await getEvent(req.body.event);
@@ -1685,7 +1730,17 @@ app.post(
       comments: req.body.comments,
       internal: req.body.internal,
       added: false,
+      additional_contact_name: req.body.additional_contact_name || null,
+      additional_contact_email: req.body.additional_contact_email || null,
+      additional_contact_phone: req.body.additional_contact_phone || null,
     };
+
+    const bcpsId = getBCPSShelterId();
+    if (!bcpsId || String(req.body.shelter) !== bcpsId) {
+      kid.additional_contact_name = null;
+      kid.additional_contact_email = null;
+      kid.additional_contact_phone = null;
+    }
 
     await createKid(req.body.event, kid);
 
@@ -1755,6 +1810,45 @@ app.post(
       .isIn(["on", "off", "true", "false"])
       .withMessage("Invalid value for added"),
     check("item_id").optional({ checkFalsy: true }).isInt(),
+    check("additional_contact_name")
+      .trim()
+      .custom((value, { req }) => {
+        const bcpsId = getBCPSShelterId();
+        if (bcpsId && String(req.body.shelter) === bcpsId) {
+          if (!value) {
+            throw new Error("Contact name is required for BCPS");
+          }
+        }
+        return true;
+      }),
+    check("additional_contact_email")
+      .trim()
+      .custom((value, { req }) => {
+        const bcpsId = getBCPSShelterId();
+        const shelterMatches = bcpsId && String(req.body.shelter) === bcpsId;
+        if (shelterMatches) {
+          if (!value) {
+            throw new Error("Contact email is required for BCPS");
+          }
+          if (!validator.isEmail(value)) {
+            throw new Error("Contact email must be valid");
+          }
+        } else if (value && !validator.isEmail(value)) {
+          throw new Error("Contact email must be valid");
+        }
+        return true;
+      }),
+    check("additional_contact_phone")
+      .trim()
+      .custom((value, { req }) => {
+        const bcpsId = getBCPSShelterId();
+        if (bcpsId && String(req.body.shelter) === bcpsId) {
+          if (!value) {
+            throw new Error("Contact cell is required for BCPS");
+          }
+        }
+        return true;
+      }),
   ],
   async (req, res) => {
     let userID = isLoggedIn(req, res);
@@ -1782,6 +1876,9 @@ app.post(
         comments: req.body.comments,
         internal: req.body.internal,
         added: req.body.added,
+        additional_contact_name: req.body.additional_contact_name,
+        additional_contact_email: req.body.additional_contact_email,
+        additional_contact_phone: req.body.additional_contact_phone,
       };
       return res.render("edit-kid", {
         loggedIn: userID,
@@ -1812,7 +1909,17 @@ app.post(
       internal: req.body.internal,
       added: req.body.added,
       item_id: req.body.item_id,
+      additional_contact_name: req.body.additional_contact_name || null,
+      additional_contact_email: req.body.additional_contact_email || null,
+      additional_contact_phone: req.body.additional_contact_phone || null,
     };
+
+    const bcpsId = getBCPSShelterId();
+    if (!bcpsId || String(req.body.shelter) !== bcpsId) {
+      kid.additional_contact_name = null;
+      kid.additional_contact_email = null;
+      kid.additional_contact_phone = null;
+    }
 
     await updateKid(req.body.id, kid);
 

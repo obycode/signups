@@ -124,10 +124,20 @@ async function ensureKidsTable(client) {
         comments TEXT,
         internal TEXT,
         added BOOLEAN DEFAULT FALSE,
-        item_id INTEGER
+        item_id INTEGER,
+        additional_contact_name TEXT,
+        additional_contact_email TEXT,
+        additional_contact_phone TEXT
       );
     `);
     console.log("Created 'kids' table.");
+  } else {
+    await client.query(`
+      ALTER TABLE kids
+        ADD COLUMN IF NOT EXISTS additional_contact_name TEXT,
+        ADD COLUMN IF NOT EXISTS additional_contact_email TEXT,
+        ADD COLUMN IF NOT EXISTS additional_contact_phone TEXT;
+    `);
   }
 }
 
@@ -742,8 +752,8 @@ async function getSignupsForEvent(event_id) {
 async function createKid(event, kid) {
   const result = await pool.query(
     `
-    INSERT INTO kids (event, name, shelter, age, gender, shirt_size, pant_size, color, comments, internal)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+    INSERT INTO kids (event, name, shelter, age, gender, shirt_size, pant_size, color, comments, internal, additional_contact_name, additional_contact_email, additional_contact_phone)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
     RETURNING id
   `,
     [
@@ -757,6 +767,9 @@ async function createKid(event, kid) {
       kid.color,
       kid.comments,
       kid.internal,
+      kid.additional_contact_name,
+      kid.additional_contact_email,
+      kid.additional_contact_phone,
     ]
   );
   return result.rows[0].id;
@@ -788,8 +801,11 @@ async function updateKid(kid_id, kid) {
     UPDATE kids
     SET event = $1, name = $2, shelter = $3, age = $4, gender = $5,
       shirt_size = $6, pant_size = $7, color = $8, comments = $9,
-      internal = $10, added = $11
-    WHERE id = $12
+      internal = $10, added = $11,
+      additional_contact_name = $12,
+      additional_contact_email = $13,
+      additional_contact_phone = $14
+    WHERE id = $15
   `,
     [
       kid.event,
@@ -803,6 +819,9 @@ async function updateKid(kid_id, kid) {
       kid.comments,
       kid.internal,
       kid.added,
+      kid.additional_contact_name,
+      kid.additional_contact_email,
+      kid.additional_contact_phone,
       kid_id,
     ]
   );

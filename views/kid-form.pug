@@ -2,11 +2,27 @@
   label(for='name') Name:
   input#name.form-control(type='text' name='name' required value=kid.name || '')
 
+- const bcpsShelter = shelters && shelters.find(shelter => shelter.name === 'BCPS')
+- const bcpsShelterId = bcpsShelter ? bcpsShelter.id : null
+
 .form-group
   label(for='shelter') Shelter:
-  select#shelter.form-control(name='shelter' required)
+  select#shelter.form-control(name='shelter' required data-bcps-id=bcpsShelterId)
     each shelter in shelters
       option(value=shelter.id selected=(shelter.id === kid.shelter))= shelter.name
+
+#additional-info(data-bcps-id=bcpsShelterId style=(kid.shelter === bcpsShelterId ? '' : 'display:none;'))
+  fieldset
+    legend Additional Info
+    .form-group
+      label(for='additional_contact_name') Contact Name:
+      input#additional_contact_name.form-control(type='text' name='additional_contact_name' value=kid.additional_contact_name || '')
+    .form-group
+      label(for='additional_contact_email') Contact Email:
+      input#additional_contact_email.form-control(type='email' name='additional_contact_email' value=kid.additional_contact_email || '')
+    .form-group
+      label(for='additional_contact_phone') Contact Cell:
+      input#additional_contact_phone.form-control(type='tel' name='additional_contact_phone' value=kid.additional_contact_phone || '')
 
 .form-group
   label(for='age') Age:

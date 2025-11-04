@@ -80,6 +80,7 @@ html
                     th(data-sort="color") Color
                     th(data-sort="comments") Comments
                     th(data-sort="internal") Internal Notes
+                    th(data-sort="additional-contact") Additional Contact
                     th(data-sort="actions") Actions
                 tbody
                   each kid in pending_kids
@@ -94,6 +95,19 @@ html
                       td #{kid.color}
                       td #{kid.comments}
                       td #{kid.internal}
+                      td
+                        if kid.additional_contact_name
+                          div
+                            strong Name:
+                            |  #{kid.additional_contact_name}
+                        if kid.additional_contact_email
+                          div
+                            strong Email:
+                            |  #{kid.additional_contact_email}
+                        if kid.additional_contact_phone
+                          div
+                            strong Cell:
+                            |  #{kid.additional_contact_phone}
                       td
                         a(href="#" data-event=event.id data-kid=kid.id class="edit-kid-link" title="Edit") ✍️
                         a(href="#" data-event=event.id data-kid=kid.id class="delete-kid-link" title="Delete") ❌
@@ -119,6 +133,7 @@ html
                     th(data-sort="comments") Comments
                     th(data-sort="signups") Signups
                     th(data-sort="internal") Internal Notes
+                    th(data-sort="additional-contact") Additional Contact
                     th(data-sort="actions") Actions
                 tbody
                   each kid in kids
@@ -135,6 +150,19 @@ html
                       td #{kid.comments}
                       td #{kid.signup_user_names}
                       td #{kid.internal}
+                      td
+                        if kid.additional_contact_name
+                          div
+                            strong Name:
+                            |  #{kid.additional_contact_name}
+                        if kid.additional_contact_email
+                          div
+                            strong Email:
+                            |  #{kid.additional_contact_email}
+                        if kid.additional_contact_phone
+                          div
+                            strong Cell:
+                            |  #{kid.additional_contact_phone}
                       td
                         a(href="#" data-event=event.id data-kid=kid.id class="edit-kid-link" title="Edit") ✍️
                         a(href="#" data-event=event.id data-kid=kid.id class="delete-kid-link" title="Delete") ❌

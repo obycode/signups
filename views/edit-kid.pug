@@ -24,3 +24,39 @@ html
               p 
                 a(href='/admin/event/' + kid.event) cancel
     include footer
+
+    script.
+      document.addEventListener('DOMContentLoaded', function() {
+        const shelterSelect = document.getElementById('shelter');
+        const additionalInfo = document.getElementById('additional-info');
+
+        if (!shelterSelect || !additionalInfo) {
+          return;
+        }
+
+        const contactInputs = Array.from(
+          additionalInfo.querySelectorAll('input[type="text"], input[type="email"], input[type="tel"]')
+        );
+        const bcpsId = shelterSelect.dataset.bcpsId;
+
+        function toggleAdditionalInfo() {
+          if (!bcpsId) {
+            additionalInfo.style.display = 'none';
+            contactInputs.forEach((input) => input.removeAttribute('required'));
+            return;
+          }
+
+          const isBCPS = shelterSelect.value === bcpsId;
+          additionalInfo.style.display = isBCPS ? 'block' : 'none';
+          contactInputs.forEach((input) => {
+            if (isBCPS) {
+              input.setAttribute('required', 'required');
+            } else {
+              input.removeAttribute('required');
+            }
+          });
+        }
+
+        shelterSelect.addEventListener('change', toggleAdditionalInfo);
+        toggleAdditionalInfo();
+      });
