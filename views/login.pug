@@ -22,13 +22,13 @@ html
                   li #{error.msg}
             form.register(method="POST" action="/login")
               div.form-group
-                label(for='identifier') Email or Phone (e.g. 4105551212):
+                label(for='identifier') Email:
                 input#identifier.form-control(
                   type='text' 
                   name='identifier' 
                   inputmode='email' 
                   autocomplete='username' 
-                  placeholder='Enter email or phone number' 
+                  placeholder='Enter email' 
                   required
                   value=identifier
                 )
