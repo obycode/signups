@@ -4,6 +4,9 @@
 
 - const bcpsShelter = shelters && shelters.find(shelter => shelter.name === 'BCPS')
 - const bcpsShelterId = bcpsShelter ? bcpsShelter.id : null
+- const hasEvent = typeof event !== 'undefined' && event !== null
+- const commentsLabel = hasEvent && event.kid_comments_label ? event.kid_comments_label : 'Gift Ideas'
+- const commentsHelp = hasEvent && event.kid_comments_help ? event.kid_comments_help : 'Things you like/enjoy or places you like to shop (~$30 value)'
 
 .form-group
   label(for='shelter') Shelter:
@@ -45,8 +48,9 @@
   input#color.form-control(type='text' name='color' value=kid.color || '')
 
 .form-group
-  label(for='comments') Gift Ideas:
-  .comment Things you like/enjoy or places you like to shop (~$30 value)
+  label(for='comments') #{commentsLabel}:
+  if commentsHelp
+    .comment #{commentsHelp}
   textarea#comments.form-control(name='comments' cols='30' rows='12')
     | #{kid.comments || ''}
 

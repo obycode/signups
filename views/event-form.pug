@@ -82,6 +82,13 @@
       textarea#kid_notes.form-control(name='kid_notes' cols='30' rows='12')
         | #{event.kid_notes || 'p \#{age} year old \#{gender}'}
     .form-group
+      label(for='kid_comments_label') Comments Section Title:
+      input#kid_comments_label.form-control(type='text' name='kid_comments_label' value=event.kid_comments_label || 'Gift Ideas')
+    .form-group
+      label(for='kid_comments_help') Comments Helper Text:
+      textarea#kid_comments_help.form-control(name='kid_comments_help' cols='30' rows='3')
+        | #{event.kid_comments_help || 'Things you like/enjoy or places you like to shop (~$30 value)'}
+    .form-group
       label(for='kid_email_info') Email Info Template (details only shown after signup confirmed, use pug templating):
       textarea#kid_email_info.form-control(name='kid_email_info' cols='30' rows='12')
         if event.kid_email_info

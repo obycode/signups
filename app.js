@@ -432,21 +432,18 @@ app.get(
 app.post(
   "/login",
   [
-    check("identifier")
-      .notEmpty()
-      .isEmail()
-      .withMessage("Email is required."),
-      // .withMessage("Email or phone number is required."),
-      // .custom((value) => {
-      //   const emailRegex = /^\S+@\S+\.\S+$/;
-      //   const phoneRegex = /^\d{10}$/;
-      //   if (!emailRegex.test(value) && !phoneRegex.test(value)) {
-      //     throw new Error(
-      //       "Must be a valid email or phone number (e.g. 4105551212)."
-      //     );
-      //   }
-      //   return true;
-      // }),
+    check("identifier").notEmpty().isEmail().withMessage("Email is required."),
+    // .withMessage("Email or phone number is required."),
+    // .custom((value) => {
+    //   const emailRegex = /^\S+@\S+\.\S+$/;
+    //   const phoneRegex = /^\d{10}$/;
+    //   if (!emailRegex.test(value) && !phoneRegex.test(value)) {
+    //     throw new Error(
+    //       "Must be a valid email or phone number (e.g. 4105551212)."
+    //     );
+    //   }
+    //   return true;
+    // }),
     check("item").optional({ checkFalsy: true }).isInt(),
   ],
   async (req, res) => {
@@ -914,6 +911,8 @@ app.post(
       .withMessage("Invalid value for allow_kids"),
     check("kid_title").trim().optional(),
     check("kid_notes").trim().optional(),
+    check("kid_comments_label").trim().optional(),
+    check("kid_comments_help").trim().optional(),
     check("kid_email_info").trim().optional(),
     check("kid_needed").isInt().optional(),
   ],
@@ -942,6 +941,8 @@ app.post(
       allow_kids: req.body.allow_kids,
       kid_title: req.body.kid_title,
       kid_notes: req.body.kid_notes,
+      kid_comments_label: req.body.kid_comments_label,
+      kid_comments_help: req.body.kid_comments_help,
       kid_email_info: req.body.kid_email_info,
       kid_needed: req.body.kid_needed,
       selectedShelters: selectedShelterIds,
@@ -1120,6 +1121,8 @@ app.post(
       .withMessage("Invalid value for allow_kids"),
     check("kid_title").trim().optional(),
     check("kid_notes").trim().optional(),
+    check("kid_comments_label").trim().optional(),
+    check("kid_comments_help").trim().optional(),
     check("kid_email_info").trim().optional(),
     check("kid_needed").isInt().optional(),
   ],
@@ -1150,6 +1153,8 @@ app.post(
         allow_kids: req.body.allow_kids,
         kid_title: req.body.kid_title,
         kid_notes: req.body.kid_notes,
+        kid_comments_label: req.body.kid_comments_label,
+        kid_comments_help: req.body.kid_comments_help,
         kid_email_info: req.body.kid_email_info,
         kid_needed: req.body.kid_needed,
         selectedShelters: selectedShelterIds,
@@ -1192,6 +1197,8 @@ app.post(
       allow_kids: req.body.allow_kids,
       kid_title: req.body.kid_title,
       kid_notes: req.body.kid_notes,
+      kid_comments_label: req.body.kid_comments_label,
+      kid_comments_help: req.body.kid_comments_help,
       kid_email_info: req.body.kid_email_info,
       kid_needed: req.body.kid_needed,
       selectedShelters: selectedShelterIds,
@@ -1781,6 +1788,11 @@ app.get(
       return res.redirect("/admin/event/edit?event=" + req.query.event);
     }
 
+    const kidEvent = await getEvent(kid.event);
+    if (!kidEvent) {
+      return res.redirect("/admin");
+    }
+
     const eventShelters = await getSheltersForEvent(kid.event);
     const sheltersForForm = eventShelters.length > 0 ? eventShelters : shelters;
 
@@ -1788,6 +1800,7 @@ app.get(
       loggedIn: userID,
       isAdmin: admin,
       kid,
+      event: kidEvent,
       shelters: sheltersForForm,
     });
   }
