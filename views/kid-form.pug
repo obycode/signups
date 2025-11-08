@@ -45,7 +45,8 @@
   input#color.form-control(type='text' name='color' value=kid.color || '')
 
 .form-group
-  label(for='comments') Comments (shared with donors):
+  label(for='comments') Gift Ideas:
+  .comment Things you like/enjoy or places you like to shop (~$30 value)
   textarea#comments.form-control(name='comments' cols='30' rows='12')
     | #{kid.comments || ''}
 

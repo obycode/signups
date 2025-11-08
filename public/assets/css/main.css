@@ -785,6 +785,11 @@ p .time {
   font-style: italic;
 }
 
+.comment {
+  font-size: small;
+  font-style: italic;
+}
+
 form.signup {
   max-width: 600px;
   margin: 0 auto;
