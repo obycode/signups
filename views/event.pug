@@ -11,8 +11,9 @@ html
       main
         section(class="Main-content")
           .event
-            p
-              img(src=event.image, alt=event.title)
+            if event.image
+              p
+                img(src=event.image, alt=event.title)
             p !{event.description}
             hr
             if !event.active

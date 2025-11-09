@@ -639,7 +639,7 @@ async function renderEvent(userID, admin, event, page, limit, res) {
   let items = await getItemsForEvent(event.id, skip, limit);
   items = items.filter((item) => item.active).map(setTimes);
   const totalItems = await countItemsForEvent(event.id);
-  const totalPages = Math.ceil(totalItems / limit);
+  const totalPages = Math.max(1, Math.ceil(totalItems / limit));
 
   return res.render("event", {
     loggedIn: userID,
