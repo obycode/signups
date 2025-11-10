@@ -349,6 +349,16 @@ app.get("/", async (req, res) => {
   });
 });
 
+app.get("/privacy", async (req, res) => {
+  let userID = isLoggedIn(req, res);
+  let admin = await isAdmin(userID);
+
+  res.render("privacy", {
+    loggedIn: userID,
+    isAdmin: admin,
+  });
+});
+
 app.get("/user", async (req, res) => {
   let userID = isLoggedIn(req, res);
   if (!userID) {
