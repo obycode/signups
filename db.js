@@ -524,11 +524,11 @@ async function createUser(user) {
     `
       INSERT INTO users (name, email, phone, magic_code, login_code, login_code_expires)
       VALUES ($1, $2, $3, $4, $5, NOW() + interval '15 minutes')
-      RETURNING id
+      RETURNING *
     `,
     [user.name, user.email, user.phone, user.magic_code, code]
   );
-  return result.rows[0].id;
+  return result.rows[0];
 }
 
 async function getUser(user_id) {

@@ -631,16 +631,26 @@ app.post(
 
     // Create a new user
     let magicCode = uuidv4();
-    let user_id = await createUser({
+    let new_user = await createUser({
       name: req.body.name,
       email: req.body.email,
       phone: req.body.phone,
       magic_code: magicCode,
     });
 
-    sendMagicLink(req.body["email"], user_id, magicCode, req.body.item);
+    sendMagicLink(
+      req.body["email"],
+      new_user.id,
+      magicCode,
+      new_user.login_code,
+      req.body.item
+    );
 
-    res.render("link-sent", { user_id, item: req.body.item });
+    res.render("link-sent", {
+      user_id: new_user.id,
+      item: req.body.item,
+      login_code: new_user.login_code,
+    });
   }
 );
 
