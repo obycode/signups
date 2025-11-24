@@ -799,6 +799,52 @@ app.delete(
   }
 );
 
+app.get(
+  "/signup/:signupID",
+  [check("signupID", "Missing signup ID").isInt()],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.redirect("/user");
+    }
+
+    let userID = isLoggedIn(req, res);
+    if (!userID) {
+      return res.redirect("/login");
+    }
+    let admin = await isAdmin(userID);
+
+    let signup = await getSignup(req.params.signupID);
+    if (!signup || signup.user_id != userID) {
+      return res.redirect("/user");
+    }
+
+    let item = await getItem(signup.item_id);
+    item = setTimes(item);
+    let event = await getEvent(item.event_id);
+
+    let signupItem = {
+      event: event.title,
+      eventDescription: event.description,
+      emailInfo: item.email_info,
+      eventEmailInfo: event.email_info,
+      title: item.title,
+      start: item.start,
+      end: item.end,
+      notes: item.notes,
+    };
+
+    return res.render("signup-detail", {
+      loggedIn: userID,
+      isAdmin: admin,
+      item: signupItem,
+      count: signup.quantity,
+      comment: signup.comment,
+      event,
+    });
+  }
+);
+
 app.get("/admin", async (req, res) => {
   let userID = isLoggedIn(req, res);
   if (!userID) {

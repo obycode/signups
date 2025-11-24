@@ -19,12 +19,15 @@ html
           .row
             .column
               if signup.item_title
-                h3 #{signup.item_title}
+                h3
+                  a(href=`/signup/${signup.id}`) #{signup.item_title}
               if signup.start && signup.end
                 p #{signup.start} - #{signup.end}
               else if signup.end
                 p Deadline: #{signup.end}
               p !{signup.notes}
+              p
+                a(href=`/signup/${signup.id}`) View details
             .column.box
               p #[strong Signed up for:] #{signup.quantity}
               button(type='submit' class="button-style" onclick=`cancelSignup('${signup.id}');`) Cancel
@@ -33,10 +36,13 @@ html
         each signup in inactive
           .row
             .column
-              h3 #{signup.item_title}
+              h3
+                a(href=`/signup/${signup.id}`) #{signup.item_title}
               if signup.start
                 p #{signup.start} - #{signup.end}
               p !{signup.notes}
+              p
+                a(href=`/signup/${signup.id}`) View details
             .column.box
               p #[strong Signed up for:] #{signup.quantity}
           hr
