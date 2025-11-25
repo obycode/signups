@@ -135,6 +135,7 @@ html
                     th(data-sort="internal") Internal Notes
                     th(data-sort="additional-contact") Additional Contact
                     th(data-sort="actions") Actions
+                    th(data-sort="links") Link
                 tbody
                   each kid in kids
                     tr
@@ -166,6 +167,8 @@ html
                       td
                         a(href="#" data-event=event.id data-kid=kid.id class="edit-kid-link" title="Edit") ✍️
                         a(href="#" data-event=event.id data-kid=kid.id class="delete-kid-link" title="Delete") ❌
+                      td
+                        a(href="/signup?item=" + kid.item_id) View
           if signups.length
             h3 Signups
               small
