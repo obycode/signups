@@ -15,16 +15,22 @@ const path = require("path");
 const multer = require("multer");
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
-const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
+const { SNSClient, PublishCommand } = require("@aws-sdk/client-sns");
+const { SESClient, SendEmailCommand } = require("@aws-sdk/client-ses");
+const { S3Client } = require("@aws-sdk/client-s3");
 const { Upload } = require("@aws-sdk/lib-storage");
 
-const s3 = new S3Client({
+const awsClientConfig = {
   region: process.env.AWS_REGION,
   credentials: {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
   },
-});
+};
+
+const s3 = new S3Client(awsClientConfig);
+const ses = new SESClient(awsClientConfig);
+const sns = new SNSClient(awsClientConfig);
 
 const {
   init: dbInit,
@@ -73,15 +79,35 @@ let neon = new neoncrm.Client(
   process.env.NEON_API_KEY
 );
 
-// using Twilio SendGrid's v3 Node.js Library
-// https://github.com/sendgrid/sendgrid-nodejs
-const sgMail = require("@sendgrid/mail");
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+const defaultFromAddress =
+  process.env.MAIL_FROM || "Empower4Life <jennifer@empower4lifemd.org>";
 
-const accountSid = process.env.TWILIO_ACCOUNT_SID;
-const authToken = process.env.TWILIO_AUTH_TOKEN;
-const Twilio = require("twilio");
-const twilio = new Twilio(accountSid, authToken);
+async function sendEmailWithSES({
+  to,
+  from = defaultFromAddress,
+  subject,
+  text,
+  html,
+}) {
+  const body = {
+    Text: { Data: text || "", Charset: "UTF-8" },
+  };
+
+  if (html) {
+    body.Html = { Data: html, Charset: "UTF-8" };
+  }
+
+  const command = new SendEmailCommand({
+    Destination: { ToAddresses: Array.isArray(to) ? to : [to] },
+    Source: from,
+    Message: {
+      Subject: { Data: subject, Charset: "UTF-8" },
+      Body: body,
+    },
+  });
+
+  return ses.send(command);
+}
 
 app.set("view engine", "pug");
 
@@ -186,22 +212,60 @@ async function sendMagicLink(email, userID, code, login_code, item) {
     html: emailBody,
   };
   try {
-    sgMail.send(msg);
+    await sendEmailWithSES(msg);
   } catch (e) {
     console.log("Error sending mail:", e);
   }
 }
 
 async function sendLoginCode(phone, OTP) {
-  // Send the OTP to the phone number
-  twilio.messages
-    .create({
-      body: `Your one time password for E4L Signups is: ${OTP}`,
-      from: process.env.TWILIO_FROM,
-      to: `+1${phone}`,
-    })
-    .then((message) => console.log("SMS sent"))
-    .catch((e) => console.error("Error sending SMS:", e.code, e.message));
+  // Normalize: remove non-digit characters
+  const normalized = phone.replace(/\D/g, "");
+  const message = `E4L Signups: Your OTP is ${OTP}.\nReply STOP to opt-out.`;
+
+  try {
+    await sns.send(
+      new PublishCommand({
+        PhoneNumber: `+1${normalized}`,
+        Message: message,
+        MessageAttributes: {
+          "AWS.SNS.SMS.SMSType": {
+            DataType: "String",
+            StringValue: "Transactional",
+          },
+        },
+      })
+    );
+
+    console.log("SMS sent");
+  } catch (e) {
+    console.error("Error sending SMS:", e.name || e.code, e.message);
+  }
+}
+
+async function sendSmsOptInConfirmation(phone) {
+  const normalized = phone.replace(/\D/g, "");
+  const message =
+    "E4L Signups: You have opted in to receive one-time login codes. " +
+    "One message per login request. Msg & data rates may apply. Reply HELP for help or STOP to cancel.";
+
+  try {
+    await sns.send(
+      new PublishCommand({
+        PhoneNumber: `+1${normalized}`,
+        Message: message,
+        MessageAttributes: {
+          "AWS.SNS.SMS.SMSType": {
+            DataType: "String",
+            StringValue: "Transactional",
+          },
+        },
+      })
+    );
+    console.log("Opt-in confirmation SMS sent");
+  } catch (e) {
+    console.error("Error sending opt-in SMS:", e.name || e.code, e.message);
+  }
 }
 
 async function sendConfirmation(email, item, count, comment) {
@@ -240,7 +304,7 @@ async function sendConfirmation(email, item, count, comment) {
     html: emailBody,
   };
   try {
-    sgMail.send(msg);
+    await sendEmailWithSES(msg);
   } catch (e) {
     console.log("Error sending mail:", e);
   }
@@ -289,7 +353,7 @@ async function sendCancellation(signup) {
     html: emailBody,
   };
   try {
-    sgMail.send(msg);
+    await sendEmailWithSES(msg);
   } catch (e) {
     console.log("Error sending mail:", e);
   }
@@ -354,6 +418,16 @@ app.get("/privacy", async (req, res) => {
   let admin = await isAdmin(userID);
 
   res.render("privacy", {
+    loggedIn: userID,
+    isAdmin: admin,
+  });
+});
+
+app.get("/terms", async (req, res) => {
+  let userID = isLoggedIn(req, res);
+  let admin = await isAdmin(userID);
+
+  res.render("terms", {
     loggedIn: userID,
     isAdmin: admin,
   });
@@ -443,7 +517,7 @@ app.post(
   "/login",
   [
     check("identifier").notEmpty().isEmail().withMessage("Email is required."),
-    // .withMessage("Email or phone number is required."),
+    // .withMessage("Email or phone number is required.")
     // .custom((value) => {
     //   const emailRegex = /^\S+@\S+\.\S+$/;
     //   const phoneRegex = /^\d{10}$/;
@@ -637,6 +711,10 @@ app.post(
       phone: req.body.phone,
       magic_code: magicCode,
     });
+
+    if (req.body.phone) {
+      sendSmsOptInConfirmation(req.body.phone);
+    }
 
     sendMagicLink(
       req.body["email"],
