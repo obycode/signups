@@ -1,0 +1,41 @@
+html
+  head
+    title Empower4Life Signups - Terms
+    meta(charset="utf-8")
+    meta(name="viewport" content="width=device-width, initial-scale=1, user-scalable=no")
+    link(rel="stylesheet" href="/assets/css/main.css")
+  body(class="landing is-preload")
+    - var title = 'Terms & Conditions';
+    include header
+    .outer-main
+      main
+        section(class="Main-content")
+          .policy
+            p Effective date: November 10, 2025
+            h2 Using Empower4Life Signups
+            p By creating an account or signing up for an event, you agree to these Terms and our Privacy Policy. You must provide accurate information and use the service only for lawful purposes related to Empower4Life programs.
+            h2 Account Security
+            p Keep your login link and one-time codes confidential. You are responsible for activity under your account.
+            h2 Communications
+            ul
+              li Email: We send transactional emails (login links, confirmations, updates) via Amazon SES to the address you provide.
+              li SMS: If you provide a phone number, you consent to receive one-time passcodes and related account notifications via Amazon SNS. Message frequency is tied to your login requests.
+              li Rates: Message and data rates may apply. Reply STOP to cancel SMS, or HELP for help.
+              li Deliverability: Delivery may depend on your carrier and device settings; we are not responsible for delays or failures outside our control.
+            h2 Consent and Opt-Out
+            p You can withdraw consent to SMS at any time by replying STOP. You can manage email preferences by contacting us at 
+              a(href='mailto:info@empower4lifemd.org') info@empower4lifemd.org
+              | .
+            h2 Data and Privacy
+            p We handle your data as described in our 
+              a(href='/privacy') Privacy Policy
+              | . We may share data with trusted providers (Amazon SES/SNS for communications, NeonCRM for nonprofit records) to operate the service.
+            h2 User Responsibilities
+            p Do not misuse the service, disrupt others, or attempt unauthorized access. You are responsible for your submissions and must not upload unlawful or harmful content.
+            h2 Service Changes
+            p We may update or discontinue features. We may update these Terms and will post the revised version with an updated effective date.
+            h2 Contact
+            p Questions? Contact us at 
+              a(href='mailto:info@empower4lifemd.org') info@empower4lifemd.org
+              | .
+    include footer

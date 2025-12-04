@@ -233,6 +233,10 @@ async function sendLoginCode(phone, OTP) {
             DataType: "String",
             StringValue: "Transactional",
           },
+          "AWS.MM.SMS.OriginationNumber": {
+            DataType: "String",
+            StringValue: "+12562910284",
+          },
         },
       })
     );
@@ -258,6 +262,10 @@ async function sendSmsOptInConfirmation(phone) {
           "AWS.SNS.SMS.SMSType": {
             DataType: "String",
             StringValue: "Transactional",
+          },
+          "AWS.MM.SMS.OriginationNumber": {
+            DataType: "String",
+            StringValue: "+12562910284",
           },
         },
       })
