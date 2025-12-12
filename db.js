@@ -932,6 +932,11 @@ async function deleteKid(kid_id) {
 
 async function approveKid(kid_id) {
   let kid = await getKid(kid_id);
+  if (kid.added && kid.item_id) {
+    // Already approved and linked to an item; no-op
+    return kid.item_id;
+  }
+
   kid.shelter_id = String.fromCharCode(64 + kid.shelter);
   let event = await getEvent(kid.event);
   let item = {
@@ -949,6 +954,8 @@ async function approveKid(kid_id) {
   `,
     [item_id, kid_id]
   );
+
+  return item_id;
 }
 
 // ADMIN
