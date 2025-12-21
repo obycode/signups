@@ -524,18 +524,19 @@ app.get(
 app.post(
   "/login",
   [
-    check("identifier").notEmpty().isEmail().withMessage("Email is required."),
-    // .withMessage("Email or phone number is required.")
-    // .custom((value) => {
-    //   const emailRegex = /^\S+@\S+\.\S+$/;
-    //   const phoneRegex = /^\d{10}$/;
-    //   if (!emailRegex.test(value) && !phoneRegex.test(value)) {
-    //     throw new Error(
-    //       "Must be a valid email or phone number (e.g. 4105551212)."
-    //     );
-    //   }
-    //   return true;
-    // }),
+    check("identifier")
+      .notEmpty()
+      .withMessage("Email or phone number is required.")
+      .custom((value) => {
+        const emailRegex = /^\S+@\S+\.\S+$/;
+        const phoneRegex = /^\d{10}$/;
+        if (!emailRegex.test(value) && !phoneRegex.test(value)) {
+          throw new Error(
+            "Must be a valid email or phone number (e.g. 4105551212)."
+          );
+        }
+        return true;
+      }),
     check("item").optional({ checkFalsy: true }).isInt(),
   ],
   async (req, res) => {
@@ -550,15 +551,15 @@ app.post(
     }
 
     // Determine if it's an email or phone
-    // const emailRegex = /^\S+@\S+\.\S+$/;
-    // const phoneRegex = /^\d{10}$/;
+    const emailRegex = /^\S+@\S+\.\S+$/;
+    const phoneRegex = /^\d{10}$/;
 
     let loginType = "email";
-    // if (emailRegex.test(req.body.identifier)) {
-    //   loginType = "email";
-    // } else if (phoneRegex.test(req.body.identifier)) {
-    //   loginType = "phone";
-    // }
+    if (emailRegex.test(req.body.identifier)) {
+      loginType = "email";
+    } else if (phoneRegex.test(req.body.identifier)) {
+      loginType = "phone";
+    }
 
     // Query the database based on the type
     let user;

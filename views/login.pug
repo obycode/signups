@@ -22,13 +22,13 @@ html
                   li #{error.msg}
             form.register(method="POST" action="/login")
               div.form-group
-                label(for='identifier') Email:
+                label(for='identifier') Email or Phone (e.g. 4105551212):
                 input#identifier.form-control(
                   type='text' 
                   name='identifier' 
                   inputmode='email' 
                   autocomplete='username' 
-                  placeholder='Enter email'
+                  placeholder='Enter email or phone number'
                   required
                   value=identifier
                 )
@@ -37,5 +37,5 @@ html
                 button(type='submit' class='button-style button-style2') Get Code
             p
               a(href="/register?item=" + item) Not registered yet? Click here to register
-            //- p(style='margin-top:1rem; max-width:640px;') If you enter a phone number, you consent to receive one-time SMS login codes for account access. Message and data rates may apply. Reply STOP to opt out.
+            p(style='margin-top:1rem; max-width:640px;') If you enter a phone number, you consent to receive one-time SMS login codes for account access. Message and data rates may apply. Reply STOP to opt out.
       include footer
