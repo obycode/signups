@@ -1703,7 +1703,9 @@ app.get("/admin/event/:id", async (req, res) => {
   let signups = await getSignupsForEvent(event.id);
   signups = signups.map(setTimes);
 
-  let items = await getItemsForEvent(event.id, 0, 20);
+  const totalItems = await countItemsForEvent(event.id);
+  const itemsLimit = totalItems > 0 ? totalItems : 1000;
+  let items = await getItemsForEvent(event.id, 0, itemsLimit);
   items = items.map(setTimes);
 
   let pending_kids = await getPendingKidsForEvent(event.id);
@@ -1726,14 +1728,18 @@ app.get("/admin/event/:id", async (req, res) => {
       };
     });
     signups.forEach((signup) => {
-      const currentSignups = summary[signup.item_id].signups;
-      const neededSignups = summary[signup.item_id].needed;
+      const summaryItem = summary[signup.item_id];
+      if (!summaryItem) {
+        return;
+      }
+      const currentSignups = summaryItem.signups;
+      const neededSignups = summaryItem.needed;
       const remainingNeeded = Math.max(neededSignups - currentSignups, 0);
 
       // Only add the minimum of the signup quantity or the remaining needed to total_signups
       const toAdd = Math.min(signup.quantity, remainingNeeded);
       total_signups += toAdd;
-      summary[signup.item_id].signups += signup.quantity;
+      summaryItem.signups += signup.quantity;
     });
   } else {
     total_needed = await countNeededForEvent(event.id);
