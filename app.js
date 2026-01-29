@@ -758,7 +758,7 @@ async function renderEvent(userID, admin, event, page, limit, res) {
   });
 }
 
-app.get("/event/:eventID", async (req, res) => {
+app.get("/event/:eventID(\\d+)", async (req, res) => {
   let userID = isLoggedIn(req, res);
   let admin = await isAdmin(userID);
   const page = parseInt(req.query.page) || 1;
