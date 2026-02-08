@@ -81,6 +81,25 @@ let neon = new neoncrm.Client(
 
 const defaultFromAddress =
   process.env.MAIL_FROM || "Empower4Life <jennifer@empower4lifemd.org>";
+const supportEmail = process.env.SUPPORT_EMAIL || "brice@empower4lifemd.org";
+
+function renderError(res, options = {}) {
+  const {
+    status = 400,
+    heading,
+    message,
+    context,
+    error,
+  } = options;
+
+  return res.status(status).render("error", {
+    heading,
+    message,
+    context,
+    error,
+    supportEmail,
+  });
+}
 
 async function sendEmailWithSES({
   to,
@@ -322,8 +341,24 @@ async function sendConfirmation(email, item, count, comment) {
 async function sendCancellation(signup) {
   const email = "ashley@empower4lifemd.org";
   const item = await getItem(signup.item_id);
+  if (!item) {
+    console.log(`Cancellation email skipped: missing item ${signup.item_id}`);
+    return;
+  }
   const event = await getEvent(item.event_id);
+  if (!event) {
+    console.log(
+      `Cancellation email skipped: missing event ${item.event_id} for item ${signup.item_id}`
+    );
+    return;
+  }
   const user = await getUser(signup.user_id);
+  if (!user) {
+    console.log(
+      `Cancellation email skipped: missing user ${signup.user_id} for signup ${signup.id}`
+    );
+    return;
+  }
 
   const itemsLink = "https://signups.empower4lifemd.org/event/" + event.id;
 
@@ -774,14 +809,24 @@ app.get("/event/:eventID(\\d+)", async (req, res) => {
 
 app.get(
   "/signup",
-  [check("item", "Missing or invalid item ID").trim()],
+  [check("item", "Missing or invalid item ID").isInt()],
   async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.redirect("/");
+    }
     let userID = isLoggedIn(req, res);
     let admin = await isAdmin(userID);
 
     let item = await getItem(req.query.item);
+    if (!item) {
+      return res.redirect("/");
+    }
     item = setTimes(item);
     let event = await getEvent(item.event_id);
+    if (!event) {
+      return res.redirect("/");
+    }
 
     return res.render("signup", {
       loggedIn: userID,
@@ -795,22 +840,35 @@ app.get(
 app.post(
   "/signup",
   [
-    check("item", "Missing or invalid item ID").trim(),
-    check("event", "Missing or invalid event ID").trim(),
+    check("item", "Missing or invalid item ID").isInt(),
+    check("event", "Missing or invalid event ID").isInt(),
     check("quantity", "Missing or invalid quantity").isInt(),
     check("comment").trim(),
   ],
   async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return renderError(res, {
+        status: 400,
+        heading: "Invalid signup",
+        message: "Please check the form and try again.",
+        context: "Signup submitted",
+        error: "Invalid input",
+      });
+    }
     let userID = isLoggedIn(req, res);
     if (!userID) {
-      return res.render("error", {
+      return renderError(res, {
+        status: 401,
+        heading: "Login required",
+        message: "Please log in and try again.",
         context: "Signup submitted",
         error: "user not logged in",
       });
     }
     let admin = await isAdmin(userID);
 
-    let item_id = req.body.item;
+    let item_id = parseInt(req.body.item, 10);
     let quantity = parseInt(req.body.quantity);
     let comment = req.body.comment;
 
@@ -820,28 +878,50 @@ app.post(
       quantity,
       comment,
     };
-    let signup_id = createSignup(signup);
+    let signup_id = await createSignup(signup);
 
     let user = await getUser(userID);
     let item = await getItem(item_id);
+    if (!item) {
+      return renderError(res, {
+        status: 404,
+        heading: "Item not found",
+        message: "That item may have been removed or is no longer available.",
+        context: "Signup submitted",
+        error: "Item not found",
+      });
+    }
     item = setTimes(item);
     let event = await getEvent(item.event_id);
+    if (!event) {
+      return renderError(res, {
+        status: 404,
+        heading: "Event not found",
+        message: "That event may have been removed or is no longer available.",
+        context: "Signup submitted",
+        error: "Event not found",
+      });
+    }
 
-    sendConfirmation(
-      user.email,
-      {
-        event: event.title,
-        eventDescription: event.description,
-        emailInfo: item.email_info,
-        eventEmailInfo: event.email_info,
-        title: item.title,
-        start: item.start,
-        end: item.end,
-        notes: item.notes,
-      },
-      quantity,
-      comment
-    );
+    try {
+      await sendConfirmation(
+        user.email,
+        {
+          event: event.title,
+          eventDescription: event.description,
+          emailInfo: item.email_info,
+          eventEmailInfo: event.email_info,
+          title: item.title,
+          start: item.start,
+          end: item.end,
+          notes: item.notes,
+        },
+        quantity,
+        comment
+      );
+    } catch (err) {
+      console.log("Error sending confirmation:", err);
+    }
 
     return res.render("success", {
       loggedIn: userID,
@@ -875,9 +955,10 @@ app.delete(
 
     let signup = await getSignup(req.body.signup);
     if (signup && signup.user_id == userID) {
-      cancelSignup(signup.id);
-
-      sendCancellation(signup);
+      await cancelSignup(signup.id);
+      sendCancellation(signup).catch((err) => {
+        console.log("Error sending cancellation:", err);
+      });
       return res.status(200).json({ success: true });
     } else {
       console.log("Error deleting signup: Invalid user ID");
@@ -907,8 +988,14 @@ app.get(
     }
 
     let item = await getItem(signup.item_id);
+    if (!item) {
+      return res.redirect("/user");
+    }
     item = setTimes(item);
     let event = await getEvent(item.event_id);
+    if (!event) {
+      return res.redirect("/user");
+    }
 
     let signupItem = {
       event: event.title,
@@ -1684,80 +1771,88 @@ app.get(
   }
 );
 
-app.get("/admin/event/:id", async (req, res) => {
-  let userID = isLoggedIn(req, res);
-  if (!userID) {
-    return res.redirect("/login");
-  }
+app.get(
+  "/admin/event/:id",
+  [check("id", "Missing event ID").isInt()],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.redirect("/admin");
+    }
+    let userID = isLoggedIn(req, res);
+    if (!userID) {
+      return res.redirect("/login");
+    }
 
-  let admin = await isAdmin(userID);
-  if (!admin) {
-    return res.redirect("/");
-  }
+    let admin = await isAdmin(userID);
+    if (!admin) {
+      return res.redirect("/");
+    }
 
-  let event = await getEvent(req.params.id);
-  if (!event) {
-    return res.redirect("/");
-  }
+    let event = await getEvent(req.params.id);
+    if (!event) {
+      return res.redirect("/");
+    }
 
-  let signups = await getSignupsForEvent(event.id);
-  signups = signups.map(setTimes);
+    let signups = await getSignupsForEvent(event.id);
+    signups = signups.map(setTimes);
 
-  const totalItems = await countItemsForEvent(event.id);
-  const itemsLimit = totalItems > 0 ? totalItems : 1000;
-  let items = await getItemsForEvent(event.id, 0, itemsLimit);
-  items = items.map(setTimes);
+    const totalItems = await countItemsForEvent(event.id);
+    const itemsLimit = totalItems > 0 ? totalItems : 1000;
+    let items = await getItemsForEvent(event.id, 0, itemsLimit);
+    items = items.map(setTimes);
 
-  let pending_kids = await getPendingKidsForEvent(event.id);
-  let kids = await getKidsForEvent(event.id);
+    let pending_kids = await getPendingKidsForEvent(event.id);
+    let kids = await getKidsForEvent(event.id);
 
-  // Collect a summary of the number of signups for each item
-  let summary = {};
-  total_needed = 0;
-  total_signups = 0;
-  if (kids.length == 0) {
-    items.forEach((item) => {
-      total_needed += item.needed;
-      summary[item.id] = {
-        signups: 0,
-        needed: item.needed,
-        title: item.title,
-        start: item.start,
-        end: item.end,
-        active: item.active,
-      };
+    // Collect a summary of the number of signups for each item
+    let summary = {};
+    let total_needed = 0;
+    let total_signups = 0;
+    if (kids.length == 0) {
+      items.forEach((item) => {
+        total_needed += item.needed;
+        summary[item.id] = {
+          signups: 0,
+          needed: item.needed,
+          title: item.title,
+          start: item.start,
+          end: item.end,
+          active: item.active,
+        };
+      });
+      signups.forEach((signup) => {
+        const summaryItem = summary[signup.item_id];
+        if (!summaryItem) {
+          return;
+        }
+        const currentSignups = summaryItem.signups;
+        const neededSignups = summaryItem.needed;
+        const remainingNeeded = Math.max(neededSignups - currentSignups, 0);
+
+        // Only add the minimum of the signup quantity or the remaining needed to total_signups
+        const toAdd = Math.min(signup.quantity, remainingNeeded);
+        total_signups += toAdd;
+        summaryItem.signups += signup.quantity;
+      });
+    } else {
+      total_needed = await countNeededForEvent(event.id);
+      total_signups = signups.reduce((acc, signup) => acc + signup.quantity, 0);
+    }
+
+    return res.render("admin-event", {
+      loggedIn: userID,
+      isAdmin: admin,
+      event,
+      signups,
+      summary,
+      total_needed,
+      total_signups,
+      kids,
+      pending_kids,
     });
-    signups.forEach((signup) => {
-      const summaryItem = summary[signup.item_id];
-      if (!summaryItem) {
-        return;
-      }
-      const currentSignups = summaryItem.signups;
-      const neededSignups = summaryItem.needed;
-      const remainingNeeded = Math.max(neededSignups - currentSignups, 0);
-
-      // Only add the minimum of the signup quantity or the remaining needed to total_signups
-      const toAdd = Math.min(signup.quantity, remainingNeeded);
-      total_signups += toAdd;
-      summaryItem.signups += signup.quantity;
-    });
-  } else {
-    total_needed = await countNeededForEvent(event.id);
-    total_signups = signups.reduce((acc, signup) => acc + signup.quantity, 0);
   }
-
-  return res.render("admin-event", {
-    loggedIn: userID,
-    isAdmin: admin,
-    event,
-    signups,
-    summary,
-    total_needed,
-    total_signups,
-    kids,
-    pending_kids,
-  });
-});
+);
 
 app.get(
   "/admin/signup/delete",
