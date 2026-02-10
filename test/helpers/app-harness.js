@@ -132,6 +132,7 @@ function loadAppWithMocks(options = {}) {
     getItem: async () => null,
     createSignup: async () => 1,
     getSignup: async () => null,
+    getSignupBySubmissionToken: async () => null,
     cancelSignup: async () => {},
     isAdmin: async () => false,
     createItem: async () => 1,

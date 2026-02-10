@@ -61,6 +61,7 @@ const {
   getItem,
   createSignup,
   getSignup,
+  getSignupBySubmissionToken,
   cancelSignup,
   isAdmin,
   createItem,
@@ -904,12 +905,14 @@ app.get(
     if (!event) {
       return res.redirect("/");
     }
+    const submissionToken = uuidv4();
 
     return res.render("signup", {
       loggedIn: userID,
       isAdmin: admin,
       event,
       item,
+      submissionToken,
     });
   },
 );
@@ -920,6 +923,10 @@ app.post(
     check("item", "Missing or invalid item ID").isInt(),
     check("event", "Missing or invalid event ID").isInt(),
     check("quantity", "Missing or invalid quantity").isInt(),
+    check("submission_token")
+      .optional({ checkFalsy: true })
+      .isUUID()
+      .withMessage("Invalid submission token"),
     check("comment").trim(),
   ],
   async (req, res) => {
@@ -946,16 +953,51 @@ app.post(
     let admin = await isAdmin(userID);
 
     let item_id = parseInt(req.body.item, 10);
-    let quantity = parseInt(req.body.quantity);
+    let quantity = parseInt(req.body.quantity, 10);
     let comment = req.body.comment;
+    let submissionToken = req.body.submission_token || null;
 
     let signup = {
       item_id,
       user_id: userID,
       quantity,
       comment,
+      submission_token: submissionToken,
     };
-    let signup_id = await createSignup(signup);
+    let signup_id;
+    let createdNewSignup = true;
+
+    try {
+      signup_id = await createSignup(signup);
+    } catch (err) {
+      const duplicateSubmission =
+        err &&
+        err.code === "23505" &&
+        submissionToken &&
+        err.constraint === "signups_submission_token_unique_idx";
+      if (!duplicateSubmission) {
+        throw err;
+      }
+
+      createdNewSignup = false;
+      const existingSignup = await getSignupBySubmissionToken(
+        userID,
+        submissionToken,
+      );
+      if (!existingSignup) {
+        return renderError(res, {
+          status: 409,
+          heading: "Signup already submitted",
+          message:
+            "Your signup was already received. Please refresh and try again.",
+          context: "Signup submitted",
+          error: "Duplicate signup submission",
+        });
+      }
+      signup_id = existingSignup.id;
+      quantity = existingSignup.quantity;
+      comment = existingSignup.comment || "";
+    }
 
     let user = await getUser(userID);
     let item = await getItem(item_id);
@@ -980,29 +1022,31 @@ app.post(
       });
     }
 
-    try {
-      await sendConfirmation(
-        user.email,
-        {
-          event: event.title,
-          eventDescription: event.description,
-          emailInfo: item.email_info,
-          eventEmailInfo: event.email_info,
-          title: item.title,
-          start: item.start,
-          end: item.end,
-          notes: item.notes,
-        },
-        quantity,
-        comment,
-      );
-    } catch (err) {
-      console.log("Error sending confirmation:", err);
-    }
+    if (createdNewSignup) {
+      try {
+        await sendConfirmation(
+          user.email,
+          {
+            event: event.title,
+            eventDescription: event.description,
+            emailInfo: item.email_info,
+            eventEmailInfo: event.email_info,
+            title: item.title,
+            start: item.start,
+            end: item.end,
+            notes: item.notes,
+          },
+          quantity,
+          comment,
+        );
+      } catch (err) {
+        console.log("Error sending confirmation:", err);
+      }
 
-    sendSignupAlert(user, event, item, quantity, comment).catch((err) => {
-      console.log("Error sending signup alert:", err);
-    });
+      sendSignupAlert(user, event, item, quantity, comment).catch((err) => {
+        console.log("Error sending signup alert:", err);
+      });
+    }
 
     return res.render("success", {
       loggedIn: userID,

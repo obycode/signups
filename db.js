@@ -107,12 +107,24 @@ async function ensureSignupsTable(client) {
         user_id INTEGER,
         quantity INTEGER,
         comment TEXT,
+        submission_token TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         canceled_at TIMESTAMP
       );
     `);
     console.log("Created 'signups' table.");
+  } else {
+    await client.query(`
+      ALTER TABLE signups
+        ADD COLUMN IF NOT EXISTS submission_token TEXT;
+    `);
   }
+
+  await client.query(`
+    CREATE UNIQUE INDEX IF NOT EXISTS signups_submission_token_unique_idx
+    ON signups (submission_token)
+    WHERE submission_token IS NOT NULL;
+  `);
 }
 
 async function ensureKidsTable(client) {
@@ -859,11 +871,17 @@ async function getMagicCodeForUser(user_id) {
 async function createSignup(signup) {
   const result = await pool.query(
     `
-    INSERT INTO signups (item_id, user_id, quantity, comment)
-    VALUES ($1, $2, $3, $4)
+    INSERT INTO signups (item_id, user_id, quantity, comment, submission_token)
+    VALUES ($1, $2, $3, $4, $5)
     RETURNING id
   `,
-    [signup.item_id, signup.user_id, signup.quantity, signup.comment],
+    [
+      signup.item_id,
+      signup.user_id,
+      signup.quantity,
+      signup.comment,
+      signup.submission_token || null,
+    ],
   );
   return result.rows[0].id;
 }
@@ -926,6 +944,24 @@ async function getSignup(signup_id) {
       return null;
     }
     return result.rows[0];
+  } catch (err) {
+    console.error(err);
+    return null;
+  }
+}
+
+async function getSignupBySubmissionToken(user_id, submission_token) {
+  try {
+    const result = await pool.query(
+      `
+        SELECT *
+        FROM signups
+        WHERE user_id = $1
+          AND submission_token = $2
+      `,
+      [user_id, submission_token],
+    );
+    return result.rows.length > 0 ? result.rows[0] : null;
   } catch (err) {
     console.error(err);
     return null;
@@ -1380,6 +1416,7 @@ module.exports = {
   getActiveSignupsForUser,
   getInactiveSignupsForUser,
   getSignup,
+  getSignupBySubmissionToken,
   cancelSignup,
   getSignupsForEvent,
   createKid,

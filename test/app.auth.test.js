@@ -278,7 +278,13 @@ test("POST /signup returns 401 error view when user is not logged in", async () 
   assert.ok(handler);
 
   const req = createReq({
-    body: { item: "4", event: "2", quantity: "1", comment: "" },
+    body: {
+      item: "4",
+      event: "2",
+      quantity: "1",
+      comment: "",
+      submission_token: "11111111-1111-1111-1111-111111111111",
+    },
     cookies: {},
   });
   const res = createRes();
@@ -321,7 +327,13 @@ test("POST /signup creates signup and renders success", async () => {
 
   const handler = state.routes.post.get("/signup");
   const req = createReq({
-    body: { item: "4", event: "8", quantity: "3", comment: "Will arrive early" },
+    body: {
+      item: "4",
+      event: "8",
+      quantity: "3",
+      comment: "Will arrive early",
+      submission_token: "22222222-2222-4222-8222-222222222222",
+    },
     cookies: { token: "valid-token" },
   });
   const res = createRes();
@@ -331,10 +343,71 @@ test("POST /signup creates signup and renders success", async () => {
   assert.equal(createdSignup.item_id, 4);
   assert.equal(createdSignup.user_id, 1);
   assert.equal(createdSignup.quantity, 3);
+  assert.equal(
+    createdSignup.submission_token,
+    "22222222-2222-4222-8222-222222222222",
+  );
   assert.equal(res.renderCalls.length, 1);
   assert.equal(res.renderCalls[0].view, "success");
   assert.equal(res.renderCalls[0].data.count, 3);
   assert.equal(state.sesEmails.length, 1);
+});
+
+test("POST /signup treats duplicate submission token as already processed", async () => {
+  const duplicateError = new Error("duplicate key value violates unique constraint");
+  duplicateError.code = "23505";
+  duplicateError.constraint = "signups_submission_token_unique_idx";
+
+  const { state } = loadAppWithMocks({
+    db: {
+      isAdmin: async () => false,
+      createSignup: async () => {
+        throw duplicateError;
+      },
+      getSignupBySubmissionToken: async () => ({
+        id: 55,
+        quantity: 2,
+        comment: "Already submitted",
+      }),
+      getUser: async () => ({ id: 1, email: "donor@example.com" }),
+      getItem: async () => ({
+        id: 4,
+        event_id: 8,
+        title: "Toy Drive",
+        notes: "Bring new items",
+        email_info: "Dropoff info",
+        start_time: "2026-02-01T15:00:00.000Z",
+        end_time: "2026-02-01T17:00:00.000Z",
+      }),
+      getEvent: async () => ({
+        id: 8,
+        title: "Holiday Outreach",
+        description: "Community support event",
+        email_info: "Event-wide email notes",
+      }),
+    },
+  });
+
+  const handler = state.routes.post.get("/signup");
+  const req = createReq({
+    body: {
+      item: "4",
+      event: "8",
+      quantity: "3",
+      comment: "Will arrive early",
+      submission_token: "33333333-3333-4333-8333-333333333333",
+    },
+    cookies: { token: "valid-token" },
+  });
+  const res = createRes();
+
+  await handler(req, res);
+
+  assert.equal(res.renderCalls.length, 1);
+  assert.equal(res.renderCalls[0].view, "success");
+  assert.equal(res.renderCalls[0].data.count, 2);
+  assert.equal(res.renderCalls[0].data.comment, "Already submitted");
+  assert.equal(state.sesEmails.length, 0);
 });
 
 test("POST /admin/event creates event and associates shelters", async () => {
@@ -405,7 +478,13 @@ test("POST /signup renders 400 error page when validation fails", async () => {
 
   const req = createReq({
     __validationErrors: [{ msg: "Missing quantity" }],
-    body: { item: "4", event: "2", quantity: "", comment: "" },
+    body: {
+      item: "4",
+      event: "2",
+      quantity: "",
+      comment: "",
+      submission_token: "44444444-4444-4444-8444-444444444444",
+    },
     cookies: { token: "valid-token" },
   });
   const res = createRes();

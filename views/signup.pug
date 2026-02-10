@@ -5,11 +5,20 @@ html
     meta(name="viewport" content="width=device-width, initial-scale=1, user-scalable=no")
     link(rel="stylesheet" href="/assets/css/main.css")
     script.
-      function submitForm(button) {
-        // Disable the button
-        button.disabled = true;
-        // Submit the form
-        button.form.submit();
+      function handleSignupSubmit(form) {
+        if (form.dataset.submitting === "true") {
+          return false;
+        }
+
+        form.dataset.submitting = "true";
+        const button = form.querySelector('button[type="submit"]');
+        if (button) {
+          button.disabled = true;
+          button.setAttribute("aria-busy", "true");
+          button.textContent = "Submitting...";
+        }
+
+        return true;
       }
   body(class="landing is-preload")
     - var title = "Sign Me Up";
@@ -25,7 +34,7 @@ html
           else if item.end
             p Deadline: #{item.end}
           p!= item.notes
-          form.signup(method="POST" action="/signup")
+          form.signup(method="POST" action="/signup" onsubmit="return handleSignupSubmit(this)")
             .form-group 
               label(for='comment') Comment: 
               textarea#comment(name="comment" cols="30" rows="4")
@@ -36,6 +45,7 @@ html
                 input#quantity(type='hidden' name='quantity' value=1)
               input#item(type='hidden' name='item' value=item.id)
               input#item(type='hidden' name='event' value=event.id)
+              input#submission_token(type='hidden' name='submission_token' value=submissionToken)
               .center
-                button(type='submit' class='button-style button-style2' onclick='submitForm(this)') Sign Up
+                button(type='submit' class='button-style button-style2') Sign Up
       include footer
