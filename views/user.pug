@@ -5,45 +5,72 @@ html
     meta(name="viewport" content="width=device-width, initial-scale=1, user-scalable=no")
     link(rel="stylesheet" href="/assets/css/main.css")
     script(charset="UTF-8" src="/assets/js/user.js")
-  body(class="landing is-preload")
+  body(class="landing is-preload user-signups-page")
     - var title = 'My Signups';
     include header
     .outer-main
       main
-        section(class="Main-content")
-        if success
-          h2 Signup canceled successfully.
-        else if error
-          h2 Error cancelling signup.
-        each signup in signups
-          .row
-            .column
-              if signup.item_title
-                h3
-                  a(href=`/signup/${signup.id}`) #{signup.item_title}
-              if signup.start && signup.end
-                p #{signup.start} - #{signup.end}
-              else if signup.end
-                p Deadline: #{signup.end}
-              p !{signup.notes}
-              p
-                a(href=`/signup/${signup.id}`) View details
-            .column.box
-              p #[strong Signed up for:] #{signup.quantity}
-              button(type='submit' class="button-style" onclick=`cancelSignup('${signup.id}');`) Cancel
-          hr
-        h2 Previous Signups
-        each signup in inactive
-          .row
-            .column
-              h3
-                a(href=`/signup/${signup.id}`) #{signup.item_title}
-              if signup.start
-                p #{signup.start} - #{signup.end}
-              p !{signup.notes}
-              p
-                a(href=`/signup/${signup.id}`) View details
-            .column.box
-              p #[strong Signed up for:] #{signup.quantity}
-          hr
+        section(class="Main-content user-signups")
+          if success
+            p.signup-notice.signup-notice-success Signup canceled successfully.
+          else if error
+            p.signup-notice.signup-notice-error Error cancelling signup.
+          .signup-sections
+            section.signup-section
+              .signup-section-heading
+                h2.signup-section-title Current Signups
+                p.signup-section-count #{signups.length} active
+              if signups && signups.length
+                .signup-card-list
+                  each signup in signups
+                    article.signup-card.signup-card-active
+                      .signup-card-main
+                        if signup.item_title
+                          h3.signup-card-title
+                            a(href=`/signup/${signup.id}`) #{signup.item_title}
+                        if signup.start && signup.end
+                          p.signup-card-time #{signup.start} - #{signup.end}
+                        else if signup.end
+                          p.signup-card-time Deadline: #{signup.end}
+                        else if signup.start
+                          p.signup-card-time Starts: #{signup.start}
+                        if signup.notes
+                          .item.signup-card-notes
+                            p!= signup.notes
+                        p.signup-card-link
+                          a(href=`/signup/${signup.id}`) View details
+                      .signup-card-side
+                        span.signup-status-badge.badge-active Active
+                        p.signup-card-quantity #[strong Signed up for:] #{signup.quantity}
+                        p.signup-card-actions
+                          button(type='submit' class="button-style" onclick=`cancelSignup('${signup.id}');`) Cancel
+              else
+                p.signup-empty You have no active signups right now.
+            section.signup-section
+              .signup-section-heading
+                h2.signup-section-title Previous Signups
+                p.signup-section-count #{inactive.length} previous
+              if inactive && inactive.length
+                .signup-card-list
+                  each signup in inactive
+                    article.signup-card.signup-card-inactive
+                      .signup-card-main
+                        h3.signup-card-title
+                          a(href=`/signup/${signup.id}`) #{signup.item_title}
+                        if signup.start && signup.end
+                          p.signup-card-time #{signup.start} - #{signup.end}
+                        else if signup.end
+                          p.signup-card-time Deadline: #{signup.end}
+                        else if signup.start
+                          p.signup-card-time Starts: #{signup.start}
+                        if signup.notes
+                          .item.signup-card-notes
+                            p!= signup.notes
+                        p.signup-card-link
+                          a(href=`/signup/${signup.id}`) View details
+                      .signup-card-side
+                        span.signup-status-badge.badge-inactive Previous
+                        p.signup-card-quantity #[strong Signed up for:] #{signup.quantity}
+              else
+                p.signup-empty No previous signups yet.
       include footer
