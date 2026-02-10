@@ -9,7 +9,11 @@ document.addEventListener("DOMContentLoaded", () => {
       const itemId = this.getAttribute("data-item");
       const url = `/admin/item/delete?event=${eventId}&item=${itemId}`;
 
-      if (confirm("Are you sure you want to delete this item?")) {
+      if (
+        confirm(
+          "Are you sure you want to delete this item? If it already has signups, it will be disabled instead.",
+        )
+      ) {
         // Redirect to the delete URL
         window.location.href = url;
       }

@@ -523,6 +523,111 @@ test("POST /admin/event redirects / when user is not admin", async () => {
   assert.equal(res.redirectCalls[0], "/");
 });
 
+test("GET /admin/item/delete deletes item when it has no active signups", async () => {
+  let deletedItemId = null;
+  let disabledPayload = null;
+  const { state } = loadAppWithMocks({
+    db: {
+      isAdmin: async () => true,
+      hasActiveSignupsForItem: async () => false,
+      deleteItem: async (itemId) => {
+        deletedItemId = itemId;
+      },
+      setItemActive: async (itemId, active) => {
+        disabledPayload = { itemId, active };
+      },
+    },
+  });
+  const handler = state.routes.get.get("/admin/item/delete");
+  assert.ok(handler);
+
+  const req = createReq({
+    cookies: { token: "admin-token" },
+    query: { event: "8", item: "12" },
+  });
+  const res = createRes();
+
+  await handler(req, res);
+
+  assert.equal(deletedItemId, "12");
+  assert.equal(disabledPayload, null);
+  assert.equal(res.redirectCalls[0], "/admin/event/8");
+});
+
+test("GET /admin/item/delete disables item when it has active signups", async () => {
+  let deletedItemId = null;
+  let disabledPayload = null;
+  const { state } = loadAppWithMocks({
+    db: {
+      isAdmin: async () => true,
+      hasActiveSignupsForItem: async () => true,
+      deleteItem: async (itemId) => {
+        deletedItemId = itemId;
+      },
+      setItemActive: async (itemId, active) => {
+        disabledPayload = { itemId, active };
+      },
+    },
+  });
+  const handler = state.routes.get.get("/admin/item/delete");
+  assert.ok(handler);
+
+  const req = createReq({
+    cookies: { token: "admin-token" },
+    query: { event: "8", item: "12" },
+  });
+  const res = createRes();
+
+  await handler(req, res);
+
+  assert.equal(deletedItemId, null);
+  assert.deepEqual(disabledPayload, { itemId: "12", active: false });
+  assert.equal(res.redirectCalls[0], "/admin/event/8");
+});
+
+test("GET /admin/item/activate redirects to /login when unauthenticated", async () => {
+  const { state } = loadAppWithMocks();
+  const handler = state.routes.get.get("/admin/item/activate");
+  assert.ok(handler);
+
+  const req = createReq({
+    cookies: {},
+    query: { event: "8", item: "12", active: "false" },
+  });
+  const res = createRes();
+
+  await handler(req, res);
+
+  assert.equal(res.redirectCalls.length, 1);
+  assert.equal(res.redirectCalls[0], "/login");
+});
+
+test("GET /admin/item/activate updates active flag and redirects", async () => {
+  let payload = null;
+  const { state } = loadAppWithMocks({
+    db: {
+      isAdmin: async () => true,
+      setItemActive: async (itemId, active) => {
+        payload = { itemId, active };
+      },
+    },
+  });
+  const handler = state.routes.get.get("/admin/item/activate");
+  assert.ok(handler);
+
+  const req = createReq({
+    cookies: { token: "admin-token" },
+    query: { event: "8", item: "12", active: "false" },
+  });
+  const res = createRes();
+
+  await handler(req, res);
+
+  assert.deepEqual(payload, { itemId: "12", active: false });
+  assert.equal(res.redirectCalls.length, 1);
+  assert.equal(res.redirectCalls[0], "/admin/event/8");
+});
+
 test("GET /admin/kid/approve-all redirects to /login when unauthenticated", async () => {
   const { state } = loadAppWithMocks();
   const handler = state.routes.get.get("/admin/kid/approve-all");

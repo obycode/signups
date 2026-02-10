@@ -64,6 +64,8 @@ const {
   createItem,
   updateItem,
   deleteItem,
+  hasActiveSignupsForItem,
+  setItemActive,
   createKid,
   getKid,
   getKidsForEvent,
@@ -1759,6 +1761,39 @@ app.post(
 );
 
 app.get(
+  "/admin/item/activate",
+  [
+    check("item", "Missing item ID").isInt(),
+    check("event", "Missing event ID").isInt(),
+    check("active", "Active is required").isBoolean(),
+  ],
+  async (req, res) => {
+    let userID = isLoggedIn(req, res);
+    if (!userID) {
+      return res.redirect("/login");
+    }
+
+    let admin = await isAdmin(userID);
+    if (!admin) {
+      return res.redirect("/");
+    }
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.redirect("/admin/event/" + req.query.event);
+    }
+
+    await setItemActive(req.query.item, req.query.active === "true");
+
+    console.log(
+      `Updated item ${req.query.item} active status to ${req.query.active}`,
+    );
+
+    return res.redirect(`/admin/event/${req.query.event}`);
+  },
+);
+
+app.get(
   "/admin/item/delete",
   [
     check("item", "Missing item ID").isInt(),
@@ -1780,9 +1815,16 @@ app.get(
       return res.redirect("/admin/event/" + req.query.event);
     }
 
-    await deleteItem(req.query.item);
-
-    console.log(`Deleted item ${req.query.item}`);
+    const hasSignups = await hasActiveSignupsForItem(req.query.item);
+    if (hasSignups) {
+      await setItemActive(req.query.item, false);
+      console.log(
+        `Disabled item ${req.query.item} because it has active signups`,
+      );
+    } else {
+      await deleteItem(req.query.item);
+      console.log(`Deleted item ${req.query.item}`);
+    }
 
     return res.redirect(`/admin/event/${req.query.event}`);
   },

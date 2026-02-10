@@ -50,6 +50,10 @@ html
                     td #{item.signups}
                     td
                       a(href="/admin/item/edit?event=" + event.id + "&item=" + id class="button-style button-style1") Edit
+                      if item.active
+                        a(href="/admin/item/activate?event=" + event.id + "&item=" + id + "&active=false" class="button-style button-style3") Disable
+                      else
+                        a(href="/admin/item/activate?event=" + event.id + "&item=" + id + "&active=true" class="button-style button-style2") Enable
                       a(href="#" data-event=event.id data-item=id class="button-style button-style3 delete-link") Delete
           p
             if event.adopt_signup

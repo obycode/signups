@@ -569,6 +569,32 @@ async function deleteItem(item_id) {
   );
 }
 
+async function hasActiveSignupsForItem(item_id) {
+  const result = await pool.query(
+    `
+    SELECT EXISTS (
+      SELECT 1
+      FROM signups
+      WHERE item_id = $1
+        AND canceled_at IS NULL
+    ) AS has_signups
+  `,
+    [item_id],
+  );
+  return result.rows[0].has_signups;
+}
+
+async function setItemActive(item_id, active) {
+  await pool.query(
+    `
+    UPDATE items
+    SET active = $1
+    WHERE id = $2
+  `,
+    [active, item_id],
+  );
+}
+
 async function getItem(item_id) {
   try {
     const result = await pool.query(
@@ -1272,6 +1298,8 @@ module.exports = {
   createItem,
   updateItem,
   deleteItem,
+  hasActiveSignupsForItem,
+  setItemActive,
   getItem,
   getEvent,
   getItemsForEvent,
