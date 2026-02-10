@@ -169,11 +169,128 @@ async function ensureSheltersTable(client) {
     await client.query(`
       CREATE TABLE shelters (
         id SERIAL PRIMARY KEY,
-        name TEXT
+        name TEXT,
+        code TEXT
       );
     `);
     console.log("Created 'shelters' table.");
+  } else {
+    await client.query(`
+      ALTER TABLE shelters
+      ADD COLUMN IF NOT EXISTS code TEXT;
+    `);
   }
+
+  await backfillShelterCodes(client);
+  await client.query(`
+    CREATE UNIQUE INDEX IF NOT EXISTS shelters_code_unique_idx
+    ON shelters (code);
+  `);
+}
+
+function shelterCodeLabel(index) {
+  const parsed = Number.parseInt(index, 10);
+  if (!Number.isInteger(parsed) || parsed < 1) {
+    return "";
+  }
+
+  let value = parsed;
+  let label = "";
+  while (value > 0) {
+    value -= 1;
+    label = String.fromCharCode(65 + (value % 26)) + label;
+    value = Math.floor(value / 26);
+  }
+
+  return label;
+}
+
+function normalizeShelterCode(code) {
+  if (typeof code !== "string") {
+    return "";
+  }
+  const trimmed = code.trim().toUpperCase();
+  if (!trimmed) {
+    return "";
+  }
+  return trimmed;
+}
+
+function getNextAvailableShelterCode(usedCodes) {
+  let idx = 1;
+  while (usedCodes.has(shelterCodeLabel(idx))) {
+    idx += 1;
+  }
+  return shelterCodeLabel(idx);
+}
+
+async function backfillShelterCodes(client) {
+  const result = await client.query(`
+    SELECT id, code
+    FROM shelters
+    ORDER BY id;
+  `);
+
+  const usedCodes = new Set();
+  const missingIds = [];
+
+  for (const shelter of result.rows) {
+    const normalizedCode = normalizeShelterCode(shelter.code);
+    if (!normalizedCode || usedCodes.has(normalizedCode)) {
+      missingIds.push(shelter.id);
+      continue;
+    }
+
+    usedCodes.add(normalizedCode);
+    if (shelter.code !== normalizedCode) {
+      await client.query(
+        `
+          UPDATE shelters
+          SET code = $1
+          WHERE id = $2
+        `,
+        [normalizedCode, shelter.id],
+      );
+    }
+  }
+
+  for (const shelterId of missingIds) {
+    const nextCode = getNextAvailableShelterCode(usedCodes);
+    usedCodes.add(nextCode);
+    await client.query(
+      `
+        UPDATE shelters
+        SET code = $1
+        WHERE id = $2
+      `,
+      [nextCode, shelterId],
+    );
+  }
+}
+
+async function getShelterCodeById(shelterId) {
+  const shelter = await getShelter(shelterId);
+  const normalizedCode = normalizeShelterCode(shelter ? shelter.code : null);
+  if (normalizedCode) {
+    return normalizedCode;
+  }
+  return shelterCodeLabel(shelterId);
+}
+
+async function getNextShelterCode() {
+  const result = await pool.query(`
+    SELECT code
+    FROM shelters
+    WHERE code IS NOT NULL
+  `);
+  const usedCodes = new Set();
+  for (const shelter of result.rows) {
+    const normalizedCode = normalizeShelterCode(shelter.code);
+    if (normalizedCode) {
+      usedCodes.add(normalizedCode);
+    }
+  }
+  return getNextAvailableShelterCode(usedCodes);
 }
 
 async function ensureEventSheltersTable(client) {
@@ -230,6 +347,10 @@ async function healthCheck() {
     throw new Error("Database pool is not initialized.");
   }
   await pool.query("SELECT 1");
+}
+
+function shelterIdLabel(shelterId) {
+  return shelterCodeLabel(shelterId);
 }
 
 // EVENTS
@@ -845,7 +966,7 @@ async function updateKid(kid_id, kid) {
 
   // If this is an approved kid with an associated item, update the item as well
   if (kid.added && kid.item_id) {
-    kid.shelter_id = String.fromCharCode(64 + kid.shelter);
+    kid.shelter_id = await getShelterCodeById(kid.shelter);
     let event = await getEvent(kid.event);
 
     await pool.query(
@@ -871,7 +992,7 @@ async function getKidsForEvent(event_id) {
       `
         SELECT 
           kids.*,
-          CHR(64 + kids.shelter) AS shelter_id,
+          shelters.code AS shelter_id,
           shelters.name AS shelter_name,
           STRING_AGG(users.name, ', ') AS signup_user_names
         FROM kids
@@ -881,12 +1002,16 @@ async function getKidsForEvent(event_id) {
         WHERE kids.event = $1
           AND kids.added = TRUE
           AND signups.canceled_at IS NULL
-        GROUP BY kids.id, shelters.name
+        GROUP BY kids.id, shelters.name, shelters.code
         ORDER BY shelters.name, kids.id;
       `,
       [event_id],
     );
-    return result.rows;
+    return result.rows.map((kid) => ({
+      ...kid,
+      shelter_id:
+        normalizeShelterCode(kid.shelter_id) || shelterIdLabel(kid.shelter),
+    }));
   } catch (err) {
     console.error(err);
     return [];
@@ -945,7 +1070,7 @@ async function approveKid(kid_id) {
     return kid.item_id;
   }
 
-  kid.shelter_id = String.fromCharCode(64 + kid.shelter);
+  kid.shelter_id = await getShelterCodeById(kid.shelter);
   let event = await getEvent(kid.event);
   let item = {
     event_id: kid.event,
@@ -1006,15 +1131,27 @@ async function getShelters() {
 }
 
 async function createShelter(name) {
-  const result = await pool.query(
-    `
-      INSERT INTO shelters (name)
-      VALUES ($1)
-      RETURNING id, name
-    `,
-    [name],
-  );
-  return result.rows[0];
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const code = await getNextShelterCode();
+    try {
+      const result = await pool.query(
+        `
+          INSERT INTO shelters (name, code)
+          VALUES ($1, $2)
+          RETURNING id, name, code
+        `,
+        [name, code],
+      );
+      return result.rows[0];
+    } catch (err) {
+      if (err && err.code === "23505") {
+        continue;
+      }
+      throw err;
+    }
+  }
+
+  throw new Error("Failed to allocate shelter code");
 }
 
 async function setEventShelters(event_id, shelter_ids) {
@@ -1074,7 +1211,7 @@ async function getShelter(shelter_id) {
   try {
     const result = await pool.query(
       `
-        SELECT name FROM shelters
+        SELECT name, code FROM shelters
         WHERE id = $1
       `,
       [shelter_id],
