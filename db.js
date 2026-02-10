@@ -53,7 +53,7 @@ async function ensureItemsTable(client) {
         email_info TEXT,
         start_time TIMESTAMP,
         end_time TIMESTAMP,
-        needed INTEGER
+        needed INTEGER,
         active BOOLEAN DEFAULT TRUE
       );
     `);
@@ -207,21 +207,29 @@ async function init() {
   pool = new Pool(config);
   const client = await pool.connect();
   try {
-    ensureEventsTable(client);
-    ensureItemsTable(client);
-    ensureUsersTable(client);
-    ensureSignupsTable(client);
-    ensureKidsTable(client);
-    ensureAdminTable(client);
-    ensureSheltersTable(client);
-    ensureEventSheltersTable(client);
+    await ensureEventsTable(client);
+    await ensureItemsTable(client);
+    await ensureUsersTable(client);
+    await ensureSignupsTable(client);
+    await ensureKidsTable(client);
+    await ensureAdminTable(client);
+    await ensureSheltersTable(client);
+    await ensureEventSheltersTable(client);
   } catch (err) {
     console.error("Error initializing tables:", err);
+    throw err;
   } finally {
     client.release();
   }
 
   return pool;
+}
+
+async function healthCheck() {
+  if (!pool) {
+    throw new Error("Database pool is not initialized.");
+  }
+  await pool.query("SELECT 1");
 }
 
 // EVENTS
@@ -249,7 +257,7 @@ async function createEvent(event) {
       event.kid_comments_help,
       event.kid_needed,
       event.allow_kids,
-    ]
+    ],
   );
   return result.rows[0].id;
 }
@@ -261,7 +269,7 @@ async function getEvent(event_id) {
         SELECT * FROM events
         WHERE id = $1
       `,
-      [event_id]
+      [event_id],
     );
 
     if (result.rows.length === 0) {
@@ -279,7 +287,7 @@ async function getEvents() {
     const result = await pool.query(
       `
         SELECT * FROM events ORDER BY active DESC, id DESC
-      `
+      `,
     );
     return result.rows;
   } catch (err) {
@@ -294,7 +302,7 @@ async function getActiveEvents() {
       `
         SELECT * FROM events
         WHERE active = true
-      `
+      `,
     );
     return result.rows;
   } catch (err) {
@@ -374,7 +382,7 @@ async function activateEvent(event_id, active) {
     SET active = $1
     WHERE id = $2
   `,
-    [active, event_id]
+    [active, event_id],
   );
 }
 
@@ -384,7 +392,7 @@ async function deleteEvent(event_id) {
     DELETE FROM events
     WHERE id = $1
   `,
-    [event_id]
+    [event_id],
   );
 }
 
@@ -405,7 +413,7 @@ async function createItem(item) {
       item.start_time || null,
       item.end_time || null,
       item.needed,
-    ]
+    ],
   );
   return result.rows[0].id;
 }
@@ -426,7 +434,7 @@ async function updateItem(item_id, item) {
       item.needed,
       item.active,
       item_id,
-    ]
+    ],
   );
 }
 
@@ -436,7 +444,7 @@ async function deleteItem(item_id) {
     DELETE FROM items
     WHERE id = $1
   `,
-    [item_id]
+    [item_id],
   );
 }
 
@@ -447,7 +455,7 @@ async function getItem(item_id) {
         SELECT * FROM items
         WHERE id = $1
       `,
-      [item_id]
+      [item_id],
     );
 
     if (result.rows.length === 0) {
@@ -473,7 +481,7 @@ async function getItemsForEvent(event_id, skip, limit) {
         ORDER BY items.active, COALESCE(items.start_time, items.end_time), signups ASC
         LIMIT $2 OFFSET $3;
       `,
-      [event_id, limit, skip]
+      [event_id, limit, skip],
     );
     return result.rows;
   } catch (err) {
@@ -490,7 +498,7 @@ async function countItemsForEvent(event_id) {
         FROM items
         WHERE event_id = $1;
       `,
-      [event_id]
+      [event_id],
     );
     return parseInt(result.rows[0].total, 10);
   } catch (err) {
@@ -507,7 +515,7 @@ async function countNeededForEvent(event_id) {
         FROM items
         WHERE event_id = $1;
       `,
-      [event_id]
+      [event_id],
     );
     return parseInt(result.rows[0].total, 10);
   } catch (err) {
@@ -526,7 +534,7 @@ async function createUser(user) {
       VALUES ($1, $2, $3, $4, $5, NOW() + interval '15 minutes')
       RETURNING *
     `,
-    [user.name, user.email, user.phone, user.magic_code, code]
+    [user.name, user.email, user.phone, user.magic_code, code],
   );
   return result.rows[0];
 }
@@ -538,7 +546,7 @@ async function getUser(user_id) {
         SELECT * FROM users
         WHERE id = $1
       `,
-      [user_id]
+      [user_id],
     );
     return result.rows[0];
   } catch (err) {
@@ -558,7 +566,7 @@ async function getUserByEmail(email) {
         WHERE email = $2
         RETURNING *;
       `,
-      [code, email]
+      [code, email],
     );
 
     if (result.rows.length === 0) {
@@ -583,7 +591,7 @@ async function getUserByPhone(phone) {
         WHERE phone = $2
         RETURNING *;
       `,
-      [code, phone]
+      [code, phone],
     );
 
     if (result.rows.length === 0) {
@@ -604,7 +612,7 @@ async function checkUserOTP(user_id, otp) {
         SELECT * FROM users
         WHERE id = $1 AND login_code = $2 AND login_code_expires > NOW()
       `,
-      [user_id, otp]
+      [user_id, otp],
     );
 
     if (result.rows.length === 0) {
@@ -630,7 +638,7 @@ async function getMagicCodeForUser(user_id) {
         SELECT magic_code FROM users
         WHERE id = $1
       `,
-      [user_id]
+      [user_id],
     );
     return result.rows[0].magic_code;
   } catch (err) {
@@ -648,7 +656,7 @@ async function createSignup(signup) {
     VALUES ($1, $2, $3, $4)
     RETURNING id
   `,
-    [signup.item_id, signup.user_id, signup.quantity, signup.comment]
+    [signup.item_id, signup.user_id, signup.quantity, signup.comment],
   );
   return result.rows[0].id;
 }
@@ -666,7 +674,7 @@ async function getActiveSignupsForUser(user_id) {
         WHERE user_id = $1 AND events.active = true AND signups.canceled_at IS NULL
         ORDER BY COALESCE(items.start_time, items.end_time)
       `,
-      [user_id]
+      [user_id],
     );
     return result.rows;
   } catch (err) {
@@ -688,7 +696,7 @@ async function getInactiveSignupsForUser(user_id) {
         WHERE user_id = $1 AND events.active = false AND signups.canceled_at IS NULL
         ORDER BY COALESCE(items.start_time, items.end_time)
       `,
-      [user_id]
+      [user_id],
     );
     return result.rows;
   } catch (err) {
@@ -704,7 +712,7 @@ async function getSignup(signup_id) {
         SELECT * FROM signups
         WHERE id = $1
       `,
-      [signup_id]
+      [signup_id],
     );
 
     if (result.rows.length === 0) {
@@ -725,7 +733,7 @@ async function cancelSignup(signup_id) {
         SET canceled_at = CURRENT_TIMESTAMP
         WHERE id = $1
       `,
-      [signup_id]
+      [signup_id],
     );
   } catch (err) {
     console.error(err);
@@ -747,7 +755,7 @@ async function getSignupsForEvent(event_id) {
         WHERE events.id = $1 AND signups.canceled_at IS NULL
         ORDER BY COALESCE(items.start_time, items.end_time);
       `,
-      [event_id]
+      [event_id],
     );
     return result.rows;
   } catch (err) {
@@ -779,7 +787,7 @@ async function createKid(event, kid) {
       kid.additional_contact_name,
       kid.additional_contact_email,
       kid.additional_contact_phone,
-    ]
+    ],
   );
   return result.rows[0].id;
 }
@@ -791,7 +799,7 @@ async function getKid(kid_id) {
         SELECT * FROM kids
         WHERE id = $1
       `,
-      [kid_id]
+      [kid_id],
     );
 
     if (result.rows.length === 0) {
@@ -832,7 +840,7 @@ async function updateKid(kid_id, kid) {
       kid.additional_contact_email,
       kid.additional_contact_phone,
       kid_id,
-    ]
+    ],
   );
 
   // If this is an approved kid with an associated item, update the item as well
@@ -852,7 +860,7 @@ async function updateKid(kid_id, kid) {
         pug.render(event.kid_email_info, kid),
         event.kid_needed,
         kid.item_id,
-      ]
+      ],
     );
   }
 }
@@ -876,7 +884,7 @@ async function getKidsForEvent(event_id) {
         GROUP BY kids.id, shelters.name
         ORDER BY shelters.name, kids.id;
       `,
-      [event_id]
+      [event_id],
     );
     return result.rows;
   } catch (err) {
@@ -896,7 +904,7 @@ async function getPendingKidsForEvent(event_id) {
         AND added = FALSE
         ORDER BY shelter, id
       `,
-      [event_id]
+      [event_id],
     );
     return result.rows;
   } catch (err) {
@@ -915,7 +923,7 @@ async function deleteKid(kid_id) {
     DELETE FROM kids
     WHERE id = $1
   `,
-    [kid_id]
+    [kid_id],
   );
 
   // If the kid had an associated item, delete it from the items table
@@ -925,7 +933,7 @@ async function deleteKid(kid_id) {
       DELETE FROM items
       WHERE id = $1
     `,
-      [kid.item_id]
+      [kid.item_id],
     );
   }
 }
@@ -952,7 +960,7 @@ async function approveKid(kid_id) {
     `
     UPDATE kids SET added = TRUE, item_id = $1 WHERE id = $2
   `,
-    [item_id, kid_id]
+    [item_id, kid_id],
   );
 
   return item_id;
@@ -971,7 +979,7 @@ async function isAdmin(user_id) {
         SELECT * FROM admin
         WHERE user_id = $1
       `,
-      [user_id]
+      [user_id],
     );
 
     return result.rows.length > 0;
@@ -988,7 +996,7 @@ async function getShelters() {
     const result = await pool.query(
       `
         SELECT * FROM shelters
-      `
+      `,
     );
     return result.rows;
   } catch (err) {
@@ -1004,7 +1012,7 @@ async function createShelter(name) {
       VALUES ($1)
       RETURNING id, name
     `,
-    [name]
+    [name],
   );
   return result.rows[0];
 }
@@ -1018,7 +1026,7 @@ async function setEventShelters(event_id, shelter_ids) {
         DELETE FROM event_shelters
         WHERE event_id = $1
       `,
-      [event_id]
+      [event_id],
     );
 
     if (shelter_ids.length > 0) {
@@ -1030,7 +1038,7 @@ async function setEventShelters(event_id, shelter_ids) {
           INSERT INTO event_shelters (event_id, shelter_id)
           VALUES ${valuesClause}
         `,
-        [event_id, ...shelter_ids]
+        [event_id, ...shelter_ids],
       );
     }
 
@@ -1053,7 +1061,7 @@ async function getSheltersForEvent(event_id) {
         WHERE event_shelters.event_id = $1
         ORDER BY shelters.name
       `,
-      [event_id]
+      [event_id],
     );
     return result.rows;
   } catch (err) {
@@ -1069,7 +1077,7 @@ async function getShelter(shelter_id) {
         SELECT name FROM shelters
         WHERE id = $1
       `,
-      [shelter_id]
+      [shelter_id],
     );
 
     if (result.rows.length === 0) {
@@ -1086,7 +1094,7 @@ async function getShelter(shelter_id) {
 async function cleanDatabase() {
   try {
     const result = await pool.query(
-      "SELECT id, name, gender, shirt_size, pant_size, color, comments, internal FROM kids"
+      "SELECT id, name, gender, shirt_size, pant_size, color, comments, internal FROM kids",
     );
     for (const row of result.rows) {
       const cleanedName = decode(row.name);
@@ -1109,7 +1117,7 @@ async function cleanDatabase() {
           cleanedComments,
           cleanedInternal,
           row.id,
-        ]
+        ],
       );
     }
     console.log("Database cleaned successfully!");
@@ -1120,6 +1128,7 @@ async function cleanDatabase() {
 
 module.exports = {
   init,
+  healthCheck,
   createEvent,
   getEvents,
   getActiveEvents,

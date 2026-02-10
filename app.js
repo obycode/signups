@@ -3,6 +3,7 @@ dotenv.config();
 var bodyParser = require("body-parser");
 const express = require("express");
 const app = express();
+app.set("trust proxy", 1);
 const { check, validationResult } = require("express-validator");
 const validator = require("validator");
 const pug = require("pug");
@@ -22,11 +23,14 @@ const { Upload } = require("@aws-sdk/lib-storage");
 
 const awsClientConfig = {
   region: process.env.AWS_REGION,
-  credentials: {
+};
+
+if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
+  awsClientConfig.credentials = {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  },
-};
+  };
+}
 
 const s3 = new S3Client(awsClientConfig);
 const ses = new SESClient(awsClientConfig);
@@ -72,25 +76,36 @@ const {
   setEventShelters,
   getSheltersForEvent,
   checkUserOTP,
+  healthCheck: dbHealthCheck,
 } = require("./db");
 
 let neon = new neoncrm.Client(
   process.env.NEON_ORG_ID,
-  process.env.NEON_API_KEY
+  process.env.NEON_API_KEY,
 );
 
 const defaultFromAddress =
   process.env.MAIL_FROM || "Empower4Life <jennifer@empower4lifemd.org>";
 const supportEmail = process.env.SUPPORT_EMAIL || "brice@empower4lifemd.org";
+const isProduction = process.env.NODE_ENV === "production";
+
+function authCookieBaseOptions() {
+  return {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: "lax",
+  };
+}
+
+function authCookieOptions() {
+  return {
+    ...authCookieBaseOptions(),
+    maxAge: 14 * 24 * 60 * 60 * 1000,
+  };
+}
 
 function renderError(res, options = {}) {
-  const {
-    status = 400,
-    heading,
-    message,
-    context,
-    error,
-  } = options;
+  const { status = 400, heading, message, context, error } = options;
 
   return res.status(status).render("error", {
     heading,
@@ -138,7 +153,7 @@ app.use(express.json());
 app.use(
   bodyParser.urlencoded({
     extended: true,
-  })
+  }),
 );
 
 let shelters = [];
@@ -152,10 +167,15 @@ function getBCPSShelterId() {
   return bcpsShelter ? String(bcpsShelter.id) : null;
 }
 
-(async () => {
-  await dbInit(false);
-  await refreshShelters();
-})();
+app.get("/healthz", async (req, res) => {
+  try {
+    await dbHealthCheck();
+    return res.status(200).json({ status: "ok" });
+  } catch (error) {
+    console.error("Health check failed:", error);
+    return res.status(503).json({ status: "error" });
+  }
+});
 
 function parseShelterIds(rawShelters) {
   if (!rawShelters) {
@@ -257,7 +277,7 @@ async function sendLoginCode(phone, OTP) {
             StringValue: "+12562910284",
           },
         },
-      })
+      }),
     );
 
     console.log("SMS sent");
@@ -287,7 +307,7 @@ async function sendSmsOptInConfirmation(phone) {
             StringValue: "+12562910284",
           },
         },
-      })
+      }),
     );
     console.log("Opt-in confirmation SMS sent");
   } catch (e) {
@@ -348,14 +368,14 @@ async function sendCancellation(signup) {
   const event = await getEvent(item.event_id);
   if (!event) {
     console.log(
-      `Cancellation email skipped: missing event ${item.event_id} for item ${signup.item_id}`
+      `Cancellation email skipped: missing event ${item.event_id} for item ${signup.item_id}`,
     );
     return;
   }
   const user = await getUser(signup.user_id);
   if (!user) {
     console.log(
-      `Cancellation email skipped: missing user ${signup.user_id} for signup ${signup.id}`
+      `Cancellation email skipped: missing user ${signup.user_id} for signup ${signup.id}`,
     );
     return;
   }
@@ -526,13 +546,10 @@ app.get(
         {
           algorithm: "HS256",
           expiresIn: "14d",
-        }
+        },
       );
 
-      res.cookie("token", token, {
-        maxAge: 14 * 24 * 60 * 60 * 1000,
-        httpOnly: true,
-      });
+      res.cookie("token", token, authCookieOptions());
     }
 
     if (req.query.item && req.query.item !== "undefined") {
@@ -540,11 +557,11 @@ app.get(
     } else {
       res.redirect("/user");
     }
-  }
+  },
 );
 
 app.get("/signout", async (req, res) => {
-  res.clearCookie("token");
+  res.clearCookie("token", authCookieBaseOptions());
   res.render("login");
 });
 
@@ -553,7 +570,7 @@ app.get(
   [check("item").optional({ checkFalsy: true }).isInt()],
   async (req, res) => {
     res.render("login", { item: req.query.item });
-  }
+  },
 );
 
 app.post(
@@ -567,7 +584,7 @@ app.post(
         const phoneRegex = /^\d{10}$/;
         if (!emailRegex.test(value) && !phoneRegex.test(value)) {
           throw new Error(
-            "Must be a valid email or phone number (e.g. 4105551212)."
+            "Must be a valid email or phone number (e.g. 4105551212).",
           );
         }
         return true;
@@ -614,7 +631,7 @@ app.post(
         user.id,
         user.magic_code,
         user.login_code,
-        req.body.item
+        req.body.item,
       );
     } else if (loginType === "phone") {
       user = await getUserByPhone(req.body.identifier);
@@ -631,7 +648,7 @@ app.post(
     }
 
     res.render("link-sent", { user_id: user.id, item: req.body.item });
-  }
+  },
 );
 
 app.post(
@@ -671,20 +688,17 @@ app.post(
       {
         algorithm: "HS256",
         expiresIn: "14d",
-      }
+      },
     );
 
-    res.cookie("token", token, {
-      maxAge: 14 * 24 * 60 * 60 * 1000,
-      httpOnly: true,
-    });
+    res.cookie("token", token, authCookieOptions());
 
     if (req.body.item && req.body.item !== "undefined") {
       res.redirect(`/signup?item=${req.body.item}`);
     } else {
       res.redirect("/user");
     }
-  }
+  },
 );
 
 app.get(
@@ -692,7 +706,7 @@ app.get(
   [check("item").optional({ checkFalsy: true }).isInt()],
   async (req, res) => {
     res.render("register", { item: req.query.item });
-  }
+  },
 );
 
 app.post(
@@ -741,7 +755,7 @@ app.post(
         user.id,
         user.magic_code,
         user.login_code,
-        req.body.item
+        req.body.item,
       );
 
       return res.render("link-sent", { user_id: user.id, item: req.body.item });
@@ -765,7 +779,7 @@ app.post(
       new_user.id,
       magicCode,
       new_user.login_code,
-      req.body.item
+      req.body.item,
     );
 
     res.render("link-sent", {
@@ -773,7 +787,7 @@ app.post(
       item: req.body.item,
       login_code: new_user.login_code,
     });
-  }
+  },
 );
 
 async function renderEvent(userID, admin, event, page, limit, res) {
@@ -816,6 +830,9 @@ app.get(
       return res.redirect("/");
     }
     let userID = isLoggedIn(req, res);
+    if (!userID) {
+      return res.redirect(`/login?item=${req.query.item}`);
+    }
     let admin = await isAdmin(userID);
 
     let item = await getItem(req.query.item);
@@ -834,7 +851,7 @@ app.get(
       event,
       item,
     });
-  }
+  },
 );
 
 app.post(
@@ -917,7 +934,7 @@ app.post(
           notes: item.notes,
         },
         quantity,
-        comment
+        comment,
       );
     } catch (err) {
       console.log("Error sending confirmation:", err);
@@ -931,7 +948,7 @@ app.post(
       comment: comment,
       event: event,
     });
-  }
+  },
 );
 
 app.delete(
@@ -964,7 +981,7 @@ app.delete(
       console.log("Error deleting signup: Invalid user ID");
       return res.status(401).json({ error: "Invalid user ID" });
     }
-  }
+  },
 );
 
 app.get(
@@ -1016,7 +1033,7 @@ app.get(
       comment: signup.comment,
       event,
     });
-  }
+  },
 );
 
 app.get("/admin", async (req, res) => {
@@ -1083,11 +1100,11 @@ app.get(
     await activateEvent(req.query.event, req.query.active);
 
     console.log(
-      `Updated event ${req.query.event} active status to ${req.query.active}`
+      `Updated event ${req.query.event} active status to ${req.query.active}`,
     );
 
     return res.redirect(`/admin/event/${req.query.event}`);
-  }
+  },
 );
 
 app.get(
@@ -1122,11 +1139,11 @@ app.get(
     await updateEvent(req.query.event, event);
 
     console.log(
-      `Updated event ${req.query.event} allow_kids status to ${req.query.allow_kids}`
+      `Updated event ${req.query.event} allow_kids status to ${req.query.allow_kids}`,
     );
 
     return res.redirect(`/admin/event/${req.query.event}`);
-  }
+  },
 );
 
 app.post(
@@ -1299,7 +1316,7 @@ app.post(
     console.log("Created new event:", newEvent);
 
     return res.redirect(`/admin/event/${newEvent}`);
-  }
+  },
 );
 
 app.get(
@@ -1336,7 +1353,7 @@ app.get(
       shelters,
       eventShelterIds,
     });
-  }
+  },
 );
 
 app.post(
@@ -1529,7 +1546,7 @@ app.post(
     console.log(`Edited event ${req.body.id}`);
 
     return res.redirect(`/admin/event/${req.body.id}`);
-  }
+  },
 );
 
 app.get(
@@ -1551,7 +1568,7 @@ app.get(
       isAdmin: admin,
       event: req.query.event,
     });
-  }
+  },
 );
 
 app.post(
@@ -1624,7 +1641,7 @@ app.post(
     console.log(`Created new item ${newItem} for event ${item.event_id}`);
 
     return res.redirect(`/admin/event/${req.body.event}`);
-  }
+  },
 );
 
 app.get(
@@ -1661,7 +1678,7 @@ app.get(
       isAdmin: admin,
       item,
     });
-  }
+  },
 );
 
 app.post(
@@ -1738,7 +1755,7 @@ app.post(
     console.log(`Edited item ${req.body.id} for event ${item.event_id}`);
 
     return res.redirect(`/admin/event/${req.body.event}`);
-  }
+  },
 );
 
 app.get(
@@ -1768,7 +1785,7 @@ app.get(
     console.log(`Deleted item ${req.query.item}`);
 
     return res.redirect(`/admin/event/${req.query.event}`);
-  }
+  },
 );
 
 app.get(
@@ -1851,7 +1868,7 @@ app.get(
       kids,
       pending_kids,
     });
-  }
+  },
 );
 
 app.get(
@@ -1881,7 +1898,7 @@ app.get(
     console.log(`Canceled signup ${req.query.signup}`);
 
     return res.redirect(`/admin/event/${req.query.event}`);
-  }
+  },
 );
 
 app.get(
@@ -1914,7 +1931,7 @@ app.get(
       },
       shelters: sheltersForForm,
     });
-  }
+  },
 );
 
 app.post(
@@ -2010,9 +2027,9 @@ app.post(
     console.log(`Added kid for event ${req.body.event}`);
 
     return res.redirect(
-      `/add-kids?event=${req.body.event}&form_code=${req.body.code}&success=true`
+      `/add-kids?event=${req.body.event}&form_code=${req.body.code}&success=true`,
     );
-  }
+  },
 );
 
 app.get(
@@ -2057,7 +2074,7 @@ app.get(
       event: kidEvent,
       shelters: sheltersForForm,
     });
-  }
+  },
 );
 
 app.post(
@@ -2195,7 +2212,7 @@ app.post(
     console.log(`Edited kid ${req.body.id} for event ${kid.event}`);
 
     return res.redirect(`/admin/event/${req.body.event}`);
-  }
+  },
 );
 
 app.get(
@@ -2225,7 +2242,7 @@ app.get(
     console.log(`Deleted kid ${req.query.kid}`);
 
     return res.redirect(`/admin/event/${req.query.event}`);
-  }
+  },
 );
 
 app.get(
@@ -2255,13 +2272,24 @@ app.get(
     console.log(`Approved kid ${req.query.kid}`);
 
     return res.status(200).json({ success: true });
-  }
+  },
 );
 
-const server = app.listen(process.env.PORT, "0.0.0.0", () => {
-  console.log(
-    `Express running → http://${server.address().address}:${
-      server.address().port
-    }`
-  );
+async function startServer() {
+  await dbInit();
+  await refreshShelters();
+
+  const port = process.env.PORT || 3000;
+  const server = app.listen(port, "0.0.0.0", () => {
+    console.log(
+      `Express running → http://${server.address().address}:${
+        server.address().port
+      }`,
+    );
+  });
+}
+
+startServer().catch((error) => {
+  console.error("Startup failed:", error);
+  process.exit(1);
 });
