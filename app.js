@@ -48,7 +48,9 @@ const {
   getUserByEmail,
   getUserByPhone,
   getItemsForEvent,
+  getActiveItemsForEvent,
   countItemsForEvent,
+  countActiveItemsForEvent,
   countNeededForEvent,
   createEvent,
   getEvent,
@@ -850,9 +852,9 @@ app.post(
 
 async function renderEvent(userID, admin, event, page, limit, res) {
   const skip = (page - 1) * limit;
-  let items = await getItemsForEvent(event.id, skip, limit);
-  items = items.filter((item) => item.active).map(setTimes);
-  const totalItems = await countItemsForEvent(event.id);
+  let items = await getActiveItemsForEvent(event.id, skip, limit);
+  items = items.map(setTimes);
+  const totalItems = await countActiveItemsForEvent(event.id);
   const totalPages = Math.max(1, Math.ceil(totalItems / limit));
 
   return res.render("event", {

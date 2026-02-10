@@ -657,6 +657,28 @@ async function getItemsForEvent(event_id, skip, limit) {
   }
 }
 
+async function getActiveItemsForEvent(event_id, skip, limit) {
+  try {
+    const result = await pool.query(
+      `
+        SELECT items.*, COALESCE(SUM(signups.quantity), 0) AS signups
+        FROM items
+        LEFT JOIN signups ON items.id = signups.item_id AND signups.canceled_at IS NULL
+        WHERE event_id = $1
+          AND items.active = TRUE
+        GROUP BY items.id
+        ORDER BY COALESCE(items.start_time, items.end_time), signups ASC
+        LIMIT $2 OFFSET $3;
+      `,
+      [event_id, limit, skip],
+    );
+    return result.rows;
+  } catch (err) {
+    console.error(err);
+    return [];
+  }
+}
+
 async function countItemsForEvent(event_id) {
   try {
     const result = await pool.query(
@@ -664,6 +686,24 @@ async function countItemsForEvent(event_id) {
         SELECT COUNT(*) AS total
         FROM items
         WHERE event_id = $1;
+      `,
+      [event_id],
+    );
+    return parseInt(result.rows[0].total, 10);
+  } catch (err) {
+    console.error(err);
+    return 0;
+  }
+}
+
+async function countActiveItemsForEvent(event_id) {
+  try {
+    const result = await pool.query(
+      `
+        SELECT COUNT(*) AS total
+        FROM items
+        WHERE event_id = $1
+          AND active = TRUE;
       `,
       [event_id],
     );
@@ -1323,7 +1363,9 @@ module.exports = {
   getItem,
   getEvent,
   getItemsForEvent,
+  getActiveItemsForEvent,
   countItemsForEvent,
+  countActiveItemsForEvent,
   countNeededForEvent,
   updateEvent,
   deleteEvent,

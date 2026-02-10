@@ -119,7 +119,9 @@ function loadAppWithMocks(options = {}) {
       return null;
     },
     getItemsForEvent: async () => [],
+    getActiveItemsForEvent: async () => [],
     countItemsForEvent: async () => 0,
+    countActiveItemsForEvent: async () => 0,
     countNeededForEvent: async () => 0,
     createEvent: async () => 1,
     getEvent: async () => null,
