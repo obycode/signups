@@ -39,11 +39,12 @@ html
             input#event.form-control(type='hidden' name='event' value=item.event_id)
             input#id.form-control(type='hidden' name='id' value=item.id)
             .form-group
-              label(for='active') Active:
-              if item.active
-                input#active.form-control(type='checkbox' name='active' checked)
-              else
-                input#active.form-control(type='checkbox' name='active')
+              label.checkbox-inline(for='active')
+                if item.active
+                  input#active(type='checkbox' name='active' checked)
+                else
+                  input#active(type='checkbox' name='active')
+                span Active
             .center
               button(type='submit' class='button-style button-style2') Update Item
     include footer

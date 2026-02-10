@@ -21,41 +21,37 @@
   input#alert_email.form-control(type='email' name='alert_email' value=event.alert_email || '')
 
 .form-group
-  label(for='alert_on_signup') Send alert for each new signup:
-  if event.alert_on_signup
-    input#alert_on_signup.form-control(type='checkbox' name='alert_on_signup' checked)
-  else
-    input#alert_on_signup.form-control(type='checkbox' name='alert_on_signup')
+  label.checkbox-inline(for='alert_on_signup')
+    if event.alert_on_signup
+      input#alert_on_signup(type='checkbox' name='alert_on_signup' checked)
+    else
+      input#alert_on_signup(type='checkbox' name='alert_on_signup')
+    span Send alert for each new signup
 
 .form-group
-  label(for='alert_on_cancellation') Send alert for each cancellation:
-  if event.alert_on_cancellation
-    input#alert_on_cancellation.form-control(type='checkbox' name='alert_on_cancellation' checked)
-  else
-    input#alert_on_cancellation.form-control(type='checkbox' name='alert_on_cancellation')
+  label.checkbox-inline(for='alert_on_cancellation')
+    if event.alert_on_cancellation
+      input#alert_on_cancellation(type='checkbox' name='alert_on_cancellation' checked)
+    else
+      input#alert_on_cancellation(type='checkbox' name='alert_on_cancellation')
+    span Send alert for each cancellation
 
 .form-group
   label(for='image') Image:
   input#image.form-control(type='file' name='image')
 
 .form-group
-  label(for='active') Active:
-  if event.active
-    input#active.form-control(type='checkbox' name='active' checked)
-  else
-    input#active.form-control(type='checkbox' name='active')
+  label.checkbox-inline(for='active')
+    if event.active
+      input#active(type='checkbox' name='active' checked)
+    else
+      input#active(type='checkbox' name='active')
+    span Active
 
-.form-group
+.form-group.form-toggle-row
   label(for='adopt_signup') Is this an adopt-a-child signup?
   input#adopt_signup(type='checkbox' name='adopt_signup' class='toggle-switch' checked=event.adopt_signup)
   label(for='adopt_signup' class='toggle-switch-label')
-
-.form-group
-  label(for='allow_kids') Allow new kids to be added via form:
-  if event.allow_kids !== false
-    input#allow_kids.form-control(type='checkbox' name='allow_kids' checked)
-  else
-    input#allow_kids.form-control(type='checkbox' name='allow_kids')
 
 // Adopt-a-Child Settings section, hidden or shown based on the event
 #adopt-settings(style=event.adopt_signup ? 'display:block;' : 'display:none;')
@@ -63,6 +59,13 @@
   - const shelterNotes = (typeof newSheltersInput !== 'undefined') ? newSheltersInput : '';
   fieldset
     legend Adopt-a-Child Settings (optional)
+    .form-group
+      label.checkbox-inline(for='allow_kids')
+        if event.allow_kids !== false
+          input#allow_kids(type='checkbox' name='allow_kids' checked)
+        else
+          input#allow_kids(type='checkbox' name='allow_kids')
+        span Allow new kids to be added via form
     p
       | For events with adopt-a-child type signups, please fill out the following fields for displaying the signups.
     ul
@@ -77,8 +80,8 @@
       li \#{comments}
       li \#{internal}
     .form-group
-      label
-        | Shelters Included:
+      .field-label-row
+        label.shelter-list-label Shelters Included:
         a#select-all-shelters.select-all-link(href='#') Select all
       if shelters && shelters.length
         .checkbox-list
