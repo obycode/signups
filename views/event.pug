@@ -4,7 +4,7 @@ html
     meta(charset="utf-8")
     meta(name="viewport" content="width=device-width, initial-scale=1, user-scalable=no")
     link(rel="stylesheet" href="/assets/css/main.css")
-  body(class="landing is-preload")
+  body(class="landing is-preload event-detail-page")
     - var title = event.title;
     include header
     .outer-main
@@ -12,36 +12,47 @@ html
         section(class="Main-content")
           .event
             if event.image
-              p
+              .event-hero-image
                 img(src=event.image, alt=event.title)
-            p !{event.description}
-            hr
+            if event.description
+              p.event-description !{event.description}
             if !event.active
               p Event is not currently active.
+            else if items && items.length
+              .event-item-list
+                each item in items
+                  - const needed = Number(item.needed) || 0;
+                  - const signups = Number(item.signups) || 0;
+                  - const remaining = Math.max(needed - signups, 0);
+                  - const progress = needed > 0 ? Math.min(100, Math.round((signups / needed) * 100)) : 100;
+                  - const isFull = needed > 0 && signups >= needed;
+                  - const isAlmost = !isFull && needed > 0 && remaining <= 2;
+                  - const badgeLabel = isFull ? 'Needs Met' : (isAlmost ? 'Almost Full' : 'Open');
+                  article.event-item-card(class=isFull ? 'is-full' : isAlmost ? 'is-almost' : 'is-open')
+                    .event-item-main
+                      if item.title
+                        h2.event-item-title #{item.title}
+                      .item.event-item-notes
+                        p!= item.notes
+                    .event-item-side
+                      if item.start && item.end
+                        p.event-item-time #{item.start} - #{item.end}
+                      else if item.end
+                        p.event-item-time Deadline: #{item.end}
+                      .event-item-status
+                        span.event-status-badge(class=isFull ? 'badge-full' : isAlmost ? 'badge-almost' : 'badge-open') #{badgeLabel}
+                        if needed > 0
+                          p.event-item-slots #{signups} of #{needed}
+                          .event-item-progress
+                            .event-item-progress-bar(style='width:' + progress + '%')
+                      if !isFull
+                        p.event-item-actions
+                          if loggedIn
+                            a(href="/signup?item=" + item.id class="button-style button-style2") Sign Up
+                          else
+                            a(href="/login?item=" + item.id class="button-style button-style2") Sign Up
             else
-              for item in items
-                .row
-                  .column
-                    if item.title
-                      h2 #{item.title}
-                    .item
-                      p!= item.notes
-                  .column
-                    if item.start && item.end
-                      p #{item.start} - #{item.end}
-                    else if item.end
-                      p Deadline: #{item.end}
-                    if item.signups < item.needed
-                      p
-                        span.slots #{item.signups} of #{item.needed}
-                      p.button-p
-                        if loggedIn
-                          a(href="/signup?item=" + item.id class="button-style button-style2") Sign Up
-                        else
-                          a(href="/login?item=" + item.id class="button-style button-style2") Sign Up
-                    else
-                      span.slots Needs Met!
-                hr
+              p No sign up items are currently available for this event.
           if event.active
             .pagination
               if currentPage > 1

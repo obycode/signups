@@ -763,6 +763,119 @@ p.button-p {
   max-width: 100%;
 }
 
+.events-page-body .title h1 {
+  font-size: 88px;
+  line-height: 0.9em;
+  letter-spacing: 0.01em;
+  margin-bottom: 0.2em;
+}
+
+.events-page .events-list {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.events-page .event-card-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.events-page .event-card {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 1.25rem;
+  padding: 1rem;
+  border: 1px solid #d8d8d8;
+  border-radius: 10px;
+  background: #fff;
+  align-items: stretch;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.events-page .event-card-link:hover .event-card {
+  border-color: #c8c8c8;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+.events-page .event-card-link:focus-visible {
+  outline: none;
+}
+
+.events-page .event-card-link:focus-visible .event-card {
+  border-color: #65cab5;
+  box-shadow: 0 0 0 3px rgba(101, 202, 181, 0.25);
+}
+
+.events-page .event-card-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.events-page .event-card-title {
+  margin: 0 0 0.45rem;
+}
+
+.events-page .event-card-summary {
+  margin: 0;
+  color: #3f3f3f;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.events-page .event-card-actions {
+  margin: 1rem 0 0;
+}
+
+.events-page .event-card-cta {
+  display: inline-block;
+  pointer-events: none;
+}
+
+.events-page .event-card-media {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 16 / 10;
+  border-radius: 8px;
+  overflow: hidden;
+  min-height: 0;
+  padding: 0.4rem;
+  border: 1px solid #e0e0e0;
+  background: #f3f3f3;
+}
+
+.events-page .event-card-media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 6px;
+}
+
+.events-page .event-card-placeholder {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #7a7a7a;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  background: linear-gradient(135deg, #f1f1f1, #e6e6e6);
+}
+
 .event {
   text-align: center;
 }
@@ -772,6 +885,148 @@ p.button-p {
   max-width: 100%;
   border: solid #555;
   padding: 8px;
+}
+
+.event-detail-page .event-hero-image {
+  max-width: 860px;
+  margin: 0 auto 1.25rem;
+}
+
+.event-detail-page .event-hero-image img {
+  width: 100%;
+  max-height: 56vh;
+  object-fit: contain;
+  border: 1px solid #cfcfcf;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.event-detail-page .event-description {
+  margin: 0 auto 1.5rem;
+  max-width: 900px;
+  color: #3f3f3f;
+  line-height: 1.6;
+}
+
+.event-detail-page .event-item-list {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.event-detail-page .event-item-card {
+  display: grid;
+  grid-template-columns: 1.35fr 0.9fr;
+  gap: 1.2rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid #d9d9d9;
+  border-radius: 10px;
+  background: #fff;
+  text-align: left;
+}
+
+.event-detail-page .event-item-card.is-open {
+  border-left: 5px solid #65cab5;
+}
+
+.event-detail-page .event-item-card.is-almost {
+  border-left: 5px solid #f0b429;
+}
+
+.event-detail-page .event-item-card.is-full {
+  border-left: 5px solid #b6b6b6;
+}
+
+.event-detail-page .event-item-title {
+  margin: 0 0 0.45rem;
+  font-size: 2.2rem;
+  line-height: 1.1;
+}
+
+.event-detail-page .event-item-notes p {
+  margin: 0;
+  color: #2e2e2e;
+  line-height: 1.45;
+}
+
+.event-detail-page .event-item-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.65rem;
+}
+
+.event-detail-page .event-item-time {
+  margin: 0;
+  font-size: 0.98rem;
+  color: #2f2f2f;
+  text-align: right;
+}
+
+.event-detail-page .event-item-status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.35rem;
+  width: 100%;
+}
+
+.event-detail-page .event-status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.event-detail-page .event-status-badge.badge-open {
+  background: #e8f8f4;
+  color: #1e8f7c;
+}
+
+.event-detail-page .event-status-badge.badge-almost {
+  background: #fff4dd;
+  color: #9b6d0b;
+}
+
+.event-detail-page .event-status-badge.badge-full {
+  background: #ececec;
+  color: #606060;
+}
+
+.event-detail-page .event-item-slots {
+  margin: 0;
+  font-weight: 700;
+  color: #2f2f2f;
+}
+
+.event-detail-page .event-item-progress {
+  width: min(220px, 100%);
+  height: 8px;
+  border-radius: 999px;
+  background: #ececec;
+  overflow: hidden;
+  margin-left: auto;
+}
+
+.event-detail-page .event-item-progress-bar {
+  height: 100%;
+  border-radius: 999px;
+  background: #65cab5;
+}
+
+.event-detail-page .event-item-card.is-almost .event-item-progress-bar {
+  background: #f0b429;
+}
+
+.event-detail-page .event-item-card.is-full .event-item-progress-bar {
+  background: #b6b6b6;
+}
+
+.event-detail-page .event-item-actions {
+  margin: 0.4rem 0 0;
 }
 
 .slots {
@@ -1189,6 +1444,41 @@ input[type="checkbox"].toggle-switch:checked + .toggle-switch-label::after {
   .column {
     width: 100%;
     padding: 4px;
+  }
+
+  .events-page-body .title h1 {
+    font-size: 48px;
+    line-height: 0.95em;
+  }
+
+  .events-page .event-card {
+    grid-template-columns: 1fr;
+  }
+
+  .events-page .event-card-media,
+  .events-page .event-card-media img,
+  .events-page .event-card-placeholder {
+    min-height: 0;
+  }
+
+  .event-detail-page .event-item-card {
+    grid-template-columns: 1fr;
+  }
+
+  .event-detail-page .event-item-side,
+  .event-detail-page .event-item-time,
+  .event-detail-page .event-item-status {
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .event-detail-page .event-item-progress {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .event-detail-page .event-item-title {
+    font-size: 1.9rem;
   }
 
   .checkbox-list {
