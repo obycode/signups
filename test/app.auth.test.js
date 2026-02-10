@@ -523,6 +523,50 @@ test("POST /admin/event redirects / when user is not admin", async () => {
   assert.equal(res.redirectCalls[0], "/");
 });
 
+test("GET /admin/kid/approve-all redirects to /login when unauthenticated", async () => {
+  const { state } = loadAppWithMocks();
+  const handler = state.routes.get.get("/admin/kid/approve-all");
+  assert.ok(handler);
+
+  const req = createReq({
+    cookies: {},
+    query: { event: "17" },
+  });
+  const res = createRes();
+
+  await handler(req, res);
+
+  assert.equal(res.redirectCalls.length, 1);
+  assert.equal(res.redirectCalls[0], "/login");
+});
+
+test("GET /admin/kid/approve-all approves all pending kids and redirects", async () => {
+  const approvedKidIds = [];
+  const { state } = loadAppWithMocks({
+    db: {
+      isAdmin: async () => true,
+      getPendingKidsForEvent: async () => [{ id: 11 }, { id: 12 }, { id: 15 }],
+      approveKid: async (kidId) => {
+        approvedKidIds.push(kidId);
+      },
+    },
+  });
+  const handler = state.routes.get.get("/admin/kid/approve-all");
+  assert.ok(handler);
+
+  const req = createReq({
+    cookies: { token: "admin-token" },
+    query: { event: "17" },
+  });
+  const res = createRes();
+
+  await handler(req, res);
+
+  assert.equal(approvedKidIds.join(","), "11,12,15");
+  assert.equal(res.redirectCalls.length, 1);
+  assert.equal(res.redirectCalls[0], "/admin/event/17");
+});
+
 test("GET /healthz returns 503 when db health check fails", async () => {
   const { state } = loadAppWithMocks({
     db: {

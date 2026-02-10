@@ -2275,6 +2275,38 @@ app.get(
   },
 );
 
+app.get(
+  "/admin/kid/approve-all",
+  [check("event", "Missing event ID").isInt()],
+  async (req, res) => {
+    let userID = isLoggedIn(req, res);
+    if (!userID) {
+      return res.redirect("/login");
+    }
+
+    let admin = await isAdmin(userID);
+    if (!admin) {
+      return res.redirect("/");
+    }
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.redirect("/admin");
+    }
+
+    const eventID = parseInt(req.query.event, 10);
+    const pendingKids = await getPendingKidsForEvent(eventID);
+
+    for (const kid of pendingKids) {
+      await approveKid(kid.id);
+    }
+
+    console.log(`Approved ${pendingKids.length} pending kids for event ${eventID}`);
+
+    return res.redirect(`/admin/event/${eventID}`);
+  },
+);
+
 async function startServer() {
   await dbInit();
   await refreshShelters();

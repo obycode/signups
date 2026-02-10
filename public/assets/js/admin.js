@@ -177,4 +177,17 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
   });
+
+  // Handle bulk pending kid approval
+  const approveAllKidsLinks = document.querySelectorAll(".approve-all-kids-link");
+  approveAllKidsLinks.forEach((link) => {
+    link.addEventListener("click", function (event) {
+      event.preventDefault();
+      const eventId = this.getAttribute("data-event");
+      const url = `/admin/kid/approve-all?event=${eventId}`;
+      if (confirm("Approve all pending kids for this event?")) {
+        window.location.href = url;
+      }
+    });
+  });
 });
