@@ -2301,7 +2301,9 @@ app.get(
       await approveKid(kid.id);
     }
 
-    console.log(`Approved ${pendingKids.length} pending kids for event ${eventID}`);
+    console.log(
+      `Approved ${pendingKids.length} pending kids for event ${eventID}`,
+    );
 
     return res.redirect(`/admin/event/${eventID}`);
   },

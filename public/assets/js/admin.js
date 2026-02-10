@@ -43,7 +43,7 @@ document.addEventListener("DOMContentLoaded", () => {
         ? v1 - v2
         : v1.toString().localeCompare(v2))(
       getCellValue(asc ? a : b, idx),
-      getCellValue(asc ? b : a, idx)
+      getCellValue(asc ? b : a, idx),
     );
 
   document.querySelectorAll("th.sortable").forEach((th) =>
@@ -54,11 +54,11 @@ document.addEventListener("DOMContentLoaded", () => {
         .sort(
           comparer(
             Array.from(th.parentNode.children).indexOf(th),
-            (this.asc = !this.asc)
-          )
+            (this.asc = !this.asc),
+          ),
         )
         .forEach((tr) => tbody.appendChild(tr));
-    })
+    }),
   );
 
   // Handle the CSV file generation
@@ -149,7 +149,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // Remove the kid from the pending kids table
             const pendingTableBody = document.querySelector(
-              "#pending-kids-table tbody"
+              "#pending-kids-table tbody",
             );
             pendingTableBody.removeChild(kidRow);
 
@@ -179,7 +179,9 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // Handle bulk pending kid approval
-  const approveAllKidsLinks = document.querySelectorAll(".approve-all-kids-link");
+  const approveAllKidsLinks = document.querySelectorAll(
+    ".approve-all-kids-link",
+  );
   approveAllKidsLinks.forEach((link) => {
     link.addEventListener("click", function (event) {
       event.preventDefault();
