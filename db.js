@@ -30,10 +30,20 @@ async function ensureEventsTable(client) {
         kid_comments_label TEXT,
         kid_comments_help TEXT,
         kid_needed INTEGER,
-        allow_kids BOOLEAN DEFAULT TRUE
+        allow_kids BOOLEAN DEFAULT TRUE,
+        alert_email TEXT,
+        alert_on_signup BOOLEAN DEFAULT FALSE,
+        alert_on_cancellation BOOLEAN DEFAULT FALSE
       );
     `);
     console.log("Created 'events' table.");
+  } else {
+    await client.query(`
+      ALTER TABLE events
+        ADD COLUMN IF NOT EXISTS alert_email TEXT,
+        ADD COLUMN IF NOT EXISTS alert_on_signup BOOLEAN DEFAULT FALSE,
+        ADD COLUMN IF NOT EXISTS alert_on_cancellation BOOLEAN DEFAULT FALSE;
+    `);
   }
 }
 
@@ -358,8 +368,8 @@ function shelterIdLabel(shelterId) {
 async function createEvent(event) {
   const result = await pool.query(
     `
-    INSERT INTO events (title, summary, description, email_info, image, active, form_code, adopt_signup, kid_title, kid_notes, kid_email_info, kid_comments_label, kid_comments_help, kid_needed, allow_kids)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+    INSERT INTO events (title, summary, description, email_info, image, active, form_code, adopt_signup, kid_title, kid_notes, kid_email_info, kid_comments_label, kid_comments_help, kid_needed, allow_kids, alert_email, alert_on_signup, alert_on_cancellation)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
     RETURNING id
   `,
     [
@@ -378,6 +388,9 @@ async function createEvent(event) {
       event.kid_comments_help,
       event.kid_needed,
       event.allow_kids,
+      event.alert_email,
+      event.alert_on_signup,
+      event.alert_on_cancellation,
     ],
   );
   return result.rows[0].id;
@@ -437,12 +450,13 @@ async function updateEvent(event_id, event) {
   const setClause = `
     title = $1, summary = $2, description = $3, email_info = $4, active = $5,
     adopt_signup = $6, kid_title = $7, kid_notes = $8, kid_email_info = $9,
-    kid_comments_label = $10, kid_comments_help = $11, kid_needed = $12, allow_kids = $13
-    ${event.image ? ", image = $14" : ""}
+    kid_comments_label = $10, kid_comments_help = $11, kid_needed = $12, allow_kids = $13,
+    alert_email = $14, alert_on_signup = $15, alert_on_cancellation = $16
+    ${event.image ? ", image = $17" : ""}
   `;
 
   // Use the correct positional placeholder for the WHERE clause
-  const whereClause = `WHERE id = ${event.image ? "$15" : "$14"}`;
+  const whereClause = `WHERE id = ${event.image ? "$18" : "$17"}`;
 
   // Combine the query
   const query = `
@@ -467,6 +481,9 @@ async function updateEvent(event_id, event) {
         event.kid_comments_help,
         event.kid_needed,
         event.allow_kids,
+        event.alert_email,
+        event.alert_on_signup,
+        event.alert_on_cancellation,
         event.image,
         event_id,
       ]
@@ -484,6 +501,9 @@ async function updateEvent(event_id, event) {
         event.kid_comments_help,
         event.kid_needed,
         event.allow_kids,
+        event.alert_email,
+        event.alert_on_signup,
+        event.alert_on_cancellation,
         event_id,
       ];
 

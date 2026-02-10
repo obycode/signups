@@ -367,6 +367,9 @@ test("POST /admin/event creates event and associates shelters", async () => {
       description: "Annual event",
       summary: "Quick summary",
       email_info: "Event notes",
+      alert_email: "events-alerts@example.com",
+      alert_on_signup: "on",
+      alert_on_cancellation: "on",
       active: "on",
       adopt_signup: "true",
       allow_kids: "true",
@@ -387,6 +390,9 @@ test("POST /admin/event creates event and associates shelters", async () => {
   assert.ok(createdEventPayload);
   assert.equal(createdEventPayload.title, "Spring Drive");
   assert.equal(createdEventPayload.form_code, "dddddddd-1111-2222-3333-444444444444");
+  assert.equal(createdEventPayload.alert_email, "events-alerts@example.com");
+  assert.equal(createdEventPayload.alert_on_signup, true);
+  assert.equal(createdEventPayload.alert_on_cancellation, true);
   assert.equal(res.redirectCalls[0], "/admin/event/901");
   assert.equal(linkedShelters.eventId, 901);
   assert.equal(linkedShelters.shelterIds.join(","), "5,6,31,32");
@@ -521,6 +527,48 @@ test("POST /admin/event redirects / when user is not admin", async () => {
 
   assert.equal(res.redirectCalls.length, 1);
   assert.equal(res.redirectCalls[0], "/");
+});
+
+test("POST /admin/event renders error when alerts enabled without alert email", async () => {
+  let createEventCalled = false;
+  const { state } = loadAppWithMocks({
+    db: {
+      isAdmin: async () => true,
+      createEvent: async () => {
+        createEventCalled = true;
+        return 321;
+      },
+      getShelters: async () => [],
+    },
+  });
+  const handler = state.routes.post.get("/admin/event");
+  assert.ok(handler);
+
+  const req = createReq({
+    cookies: { token: "admin-token" },
+    body: {
+      title: "Spring Drive",
+      description: "Annual event",
+      summary: "Quick summary",
+      email_info: "Event notes",
+      alert_email: "",
+      alert_on_signup: "on",
+      alert_on_cancellation: "on",
+      active: "on",
+      adopt_signup: "false",
+      allow_kids: "true",
+      shelters: [],
+      new_shelters: "",
+    },
+  });
+  const res = createRes();
+
+  await handler(req, res);
+
+  assert.equal(createEventCalled, false);
+  assert.equal(res.renderCalls.length, 1);
+  assert.equal(res.renderCalls[0].view, "new-event");
+  assert.equal(res.renderCalls[0].data.errors[0].msg.includes("required"), true);
 });
 
 test("GET /admin/item/delete deletes item when it has no active signups", async () => {

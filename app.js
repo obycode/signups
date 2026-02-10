@@ -359,9 +359,61 @@ async function sendConfirmation(email, item, count, comment) {
   }
 }
 
-/// Send an email to Ashley letting her know that a signup has been cancelled.
+async function sendSignupAlert(user, event, item, count, comment) {
+  const alertEmail = event.alert_on_signup ? event.alert_email : null;
+  if (!alertEmail) {
+    return;
+  }
+
+  const adminLink = `${process.env.BASE_URL}/admin/event/${event.id}`;
+  let emailBody = pug.renderFile("views/e4l-mail.pug", {
+    title: "Empower4Life Signup Alert",
+    preheader: "New signup submitted",
+    header: {
+      src: "https://images.squarespace-cdn.com/content/v1/5e0f48b1f2de9e7798c9150b/1581484830548-NDTK6YHUVSJILPCCMDPB/FINAL-_2_.png?format=750w",
+      alt: "Empower4Life Logo",
+    },
+    bodyTop: pug.renderFile("views/signup-alert.pug", {
+      user: user.name,
+      userEmail: user.email,
+      event: event.title,
+      item: item.title,
+      count: count,
+      comment: comment || "-",
+    }),
+    button: {
+      url: adminLink,
+      text: "Open Event Admin",
+    },
+  });
+  emailBody = await inlineCss(emailBody, {
+    url: `file://${process.cwd()}/public/`,
+    preserveMediaQueries: true,
+  });
+
+  try {
+    await sendEmailWithSES({
+      to: alertEmail,
+      from: "Empower4Life <jennifer@empower4lifemd.org>",
+      subject: `New Signup: ${event.title}`,
+      text: pug.renderFile("views/signup-alert-text.pug", {
+        user: user.name,
+        userEmail: user.email,
+        event: event.title,
+        item: item.title,
+        count: count,
+        comment: comment || "-",
+        link: adminLink,
+      }),
+      html: emailBody,
+    });
+  } catch (e) {
+    console.log("Error sending signup alert:", e);
+  }
+}
+
+/// Send an email alert when a signup has been cancelled.
 async function sendCancellation(signup) {
-  const email = "ashley@empower4lifemd.org";
   const item = await getItem(signup.item_id);
   if (!item) {
     console.log(`Cancellation email skipped: missing item ${signup.item_id}`);
@@ -372,6 +424,10 @@ async function sendCancellation(signup) {
     console.log(
       `Cancellation email skipped: missing event ${item.event_id} for item ${signup.item_id}`,
     );
+    return;
+  }
+  const email = event.alert_on_cancellation ? event.alert_email : null;
+  if (!email) {
     return;
   }
   const user = await getUser(signup.user_id);
@@ -942,6 +998,10 @@ app.post(
       console.log("Error sending confirmation:", err);
     }
 
+    sendSignupAlert(user, event, item, quantity, comment).catch((err) => {
+      console.log("Error sending signup alert:", err);
+    });
+
     return res.render("success", {
       loggedIn: userID,
       isAdmin: admin,
@@ -1168,6 +1228,18 @@ app.post(
       .optional({ checkFalsy: true })
       .isIn(["on", "off", "true", "false"])
       .withMessage("Invalid value for allow_kids"),
+    check("alert_email")
+      .optional({ nullable: true, checkFalsy: true })
+      .isEmail()
+      .withMessage("Alert email must be a valid email address."),
+    check("alert_on_signup", "Alert on signup is invalid")
+      .optional({ checkFalsy: true })
+      .isIn(["on", "off", "true", "false"])
+      .withMessage("Invalid value for alert_on_signup"),
+    check("alert_on_cancellation", "Alert on cancellation is invalid")
+      .optional({ checkFalsy: true })
+      .isIn(["on", "off", "true", "false"])
+      .withMessage("Invalid value for alert_on_cancellation"),
     check("kid_title").trim().optional(),
     check("kid_notes").trim().optional(),
     check("kid_comments_label").trim().optional(),
@@ -1204,11 +1276,26 @@ app.post(
       kid_comments_help: req.body.kid_comments_help,
       kid_email_info: req.body.kid_email_info,
       kid_needed: req.body.kid_needed,
+      alert_email: req.body.alert_email ? req.body.alert_email.trim() : "",
+      alert_on_signup: req.body.alert_on_signup,
+      alert_on_cancellation: req.body.alert_on_cancellation,
       selectedShelters: selectedShelterIds,
     };
 
     const errors = validationResult(req);
-    if (!errors.isEmpty()) {
+    const renderedErrors = errors.array();
+    if (
+      (req.body.alert_on_signup === "on" ||
+        req.body.alert_on_signup === "true" ||
+        req.body.alert_on_cancellation === "on" ||
+        req.body.alert_on_cancellation === "true") &&
+      !event.alert_email
+    ) {
+      renderedErrors.push({
+        msg: "Alert email is required when alert notifications are enabled.",
+      });
+    }
+    if (renderedErrors.length > 0) {
       return res.render("new-event", {
         loggedIn: userID,
         isAdmin: admin,
@@ -1216,7 +1303,7 @@ app.post(
         shelters,
         eventShelterIds: selectedShelterIds,
         newSheltersInput: req.body.new_shelters || "",
-        errors: errors.array(),
+        errors: renderedErrors,
       });
     }
 
@@ -1235,6 +1322,29 @@ app.post(
     } else {
       req.body.allow_kids = false;
     }
+    if (
+      req.body.alert_on_signup === "on" ||
+      req.body.alert_on_signup === "true"
+    ) {
+      req.body.alert_on_signup = true;
+    } else {
+      req.body.alert_on_signup = false;
+    }
+    if (
+      req.body.alert_on_cancellation === "on" ||
+      req.body.alert_on_cancellation === "true"
+    ) {
+      req.body.alert_on_cancellation = true;
+    } else {
+      req.body.alert_on_cancellation = false;
+    }
+
+    event.active = req.body.active;
+    event.adopt_signup = req.body.adopt_signup;
+    event.allow_kids = req.body.allow_kids;
+    event.alert_on_signup = req.body.alert_on_signup;
+    event.alert_on_cancellation = req.body.alert_on_cancellation;
+    event.alert_email = event.alert_email || null;
 
     if (req.file) {
       const fileContent = req.file.buffer;
@@ -1378,6 +1488,18 @@ app.post(
       .optional({ checkFalsy: true })
       .isIn(["on", "off", "true", "false"])
       .withMessage("Invalid value for allow_kids"),
+    check("alert_email")
+      .optional({ nullable: true, checkFalsy: true })
+      .isEmail()
+      .withMessage("Alert email must be a valid email address."),
+    check("alert_on_signup", "Alert on signup is invalid")
+      .optional({ checkFalsy: true })
+      .isIn(["on", "off", "true", "false"])
+      .withMessage("Invalid value for alert_on_signup"),
+    check("alert_on_cancellation", "Alert on cancellation is invalid")
+      .optional({ checkFalsy: true })
+      .isIn(["on", "off", "true", "false"])
+      .withMessage("Invalid value for alert_on_cancellation"),
     check("kid_title").trim().optional(),
     check("kid_notes").trim().optional(),
     check("kid_comments_label").trim().optional(),
@@ -1400,7 +1522,19 @@ app.post(
     const newShelterNames = parseNewShelterNames(req.body.new_shelters);
 
     const errors = validationResult(req);
-    if (!errors.isEmpty()) {
+    const renderedErrors = errors.array();
+    if (
+      (req.body.alert_on_signup === "on" ||
+        req.body.alert_on_signup === "true" ||
+        req.body.alert_on_cancellation === "on" ||
+        req.body.alert_on_cancellation === "true") &&
+      !(req.body.alert_email && req.body.alert_email.trim())
+    ) {
+      renderedErrors.push({
+        msg: "Alert email is required when alert notifications are enabled.",
+      });
+    }
+    if (renderedErrors.length > 0) {
       const event = {
         id: req.body.id,
         title: req.body.title,
@@ -1410,6 +1544,9 @@ app.post(
         active: req.body.active,
         adopt_signup: req.body.adopt_signup,
         allow_kids: req.body.allow_kids,
+        alert_email: req.body.alert_email ? req.body.alert_email.trim() : "",
+        alert_on_signup: req.body.alert_on_signup,
+        alert_on_cancellation: req.body.alert_on_cancellation,
         kid_title: req.body.kid_title,
         kid_notes: req.body.kid_notes,
         kid_comments_label: req.body.kid_comments_label,
@@ -1421,7 +1558,7 @@ app.post(
       return res.render("edit-event", {
         loggedIn: userID,
         isAdmin: admin,
-        errors: errors.array(),
+        errors: renderedErrors,
         event,
         shelters,
         eventShelterIds: selectedShelterIds,
@@ -1444,6 +1581,22 @@ app.post(
     } else {
       req.body.allow_kids = false;
     }
+    if (
+      req.body.alert_on_signup === "on" ||
+      req.body.alert_on_signup === "true"
+    ) {
+      req.body.alert_on_signup = true;
+    } else {
+      req.body.alert_on_signup = false;
+    }
+    if (
+      req.body.alert_on_cancellation === "on" ||
+      req.body.alert_on_cancellation === "true"
+    ) {
+      req.body.alert_on_cancellation = true;
+    } else {
+      req.body.alert_on_cancellation = false;
+    }
 
     const event = {
       id: req.body.id,
@@ -1454,6 +1607,9 @@ app.post(
       active: req.body.active,
       adopt_signup: req.body.adopt_signup,
       allow_kids: req.body.allow_kids,
+      alert_email: req.body.alert_email ? req.body.alert_email.trim() : null,
+      alert_on_signup: req.body.alert_on_signup,
+      alert_on_cancellation: req.body.alert_on_cancellation,
       kid_title: req.body.kid_title,
       kid_notes: req.body.kid_notes,
       kid_comments_label: req.body.kid_comments_label,

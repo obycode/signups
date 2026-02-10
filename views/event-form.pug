@@ -17,6 +17,24 @@
     | #{event.email_info || ''}
 
 .form-group
+  label(for='alert_email') Alert Email (optional):
+  input#alert_email.form-control(type='email' name='alert_email' value=event.alert_email || '')
+
+.form-group
+  label(for='alert_on_signup') Send alert for each new signup:
+  if event.alert_on_signup
+    input#alert_on_signup.form-control(type='checkbox' name='alert_on_signup' checked)
+  else
+    input#alert_on_signup.form-control(type='checkbox' name='alert_on_signup')
+
+.form-group
+  label(for='alert_on_cancellation') Send alert for each cancellation:
+  if event.alert_on_cancellation
+    input#alert_on_cancellation.form-control(type='checkbox' name='alert_on_cancellation' checked)
+  else
+    input#alert_on_cancellation.form-control(type='checkbox' name='alert_on_cancellation')
+
+.form-group
   label(for='image') Image:
   input#image.form-control(type='file' name='image')
 
