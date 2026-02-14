@@ -16,25 +16,33 @@
   textarea#email_info.form-control(name='email_info' cols='30' rows='12')
     | #{event.email_info || ''}
 
-.form-group
-  label(for='alert_email') Alert Email (optional):
-  input#alert_email.form-control(type='email' name='alert_email' value=event.alert_email || '')
+fieldset.event-form-box
+  legend Alert Notifications
+  .form-group
+    label(for='alert_email') Alert Email (optional):
+    input#alert_email.form-control(type='email' name='alert_email' value=event.alert_email || '')
+  .form-group
+    label.checkbox-inline(for='alert_on_signup')
+      if event.alert_on_signup
+        input#alert_on_signup(type='checkbox' name='alert_on_signup' checked)
+      else
+        input#alert_on_signup(type='checkbox' name='alert_on_signup')
+      span Send alert for each new signup
+  .form-group
+    label.checkbox-inline(for='alert_on_cancellation')
+      if event.alert_on_cancellation
+        input#alert_on_cancellation(type='checkbox' name='alert_on_cancellation' checked)
+      else
+        input#alert_on_cancellation(type='checkbox' name='alert_on_cancellation')
+      span Send alert for each cancellation
 
 .form-group
-  label.checkbox-inline(for='alert_on_signup')
-    if event.alert_on_signup
-      input#alert_on_signup(type='checkbox' name='alert_on_signup' checked)
+  label.checkbox-inline(for='allow_overage')
+    if event.allow_overage
+      input#allow_overage(type='checkbox' name='allow_overage' checked)
     else
-      input#alert_on_signup(type='checkbox' name='alert_on_signup')
-    span Send alert for each new signup
-
-.form-group
-  label.checkbox-inline(for='alert_on_cancellation')
-    if event.alert_on_cancellation
-      input#alert_on_cancellation(type='checkbox' name='alert_on_cancellation' checked)
-    else
-      input#alert_on_cancellation(type='checkbox' name='alert_on_cancellation')
-    span Send alert for each cancellation
+      input#allow_overage(type='checkbox' name='allow_overage')
+    span Allow overages when an item has already been fulfilled
 
 .form-group
   label(for='image') Image:

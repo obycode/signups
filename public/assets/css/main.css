@@ -1258,6 +1258,172 @@ p.button-p {
   color: #555;
 }
 
+.signup-success-page {
+  display: flex;
+  justify-content: center;
+}
+
+.signup-success-shell {
+  width: min(820px, 100%);
+  display: grid;
+  gap: 1rem;
+}
+
+.signup-success-banner {
+  padding: 1rem 1.15rem;
+  border: 1px solid #bfece2;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #f0fbf8, #e7f7f2);
+}
+
+.signup-success-kicker {
+  margin: 0 0 0.2rem;
+  font-size: 0.88rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #1d8574;
+  font-weight: 700;
+}
+
+.signup-success-copy {
+  margin: 0;
+  font-size: 1rem;
+  color: #1f2d2a;
+}
+
+.signup-success-card {
+  background: #fff;
+  border: 1px solid #d5d5d5;
+  border-radius: 12px;
+  padding: 1.2rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  display: grid;
+  gap: 1rem;
+}
+
+.signup-success-title {
+  margin: 0 0 0.35rem;
+  line-height: 1.15;
+}
+
+.signup-success-time {
+  margin: 0;
+  color: #3b3b3b;
+}
+
+.signup-success-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.65rem 0.75rem;
+  background: #f7f8f8;
+  border: 1px solid #e2e2e2;
+  border-radius: 8px;
+}
+
+.signup-success-quantity,
+.signup-success-comment {
+  margin: 0;
+}
+
+.signup-success-comment span {
+  font-weight: 700;
+}
+
+.signup-success-section {
+  border-top: 1px solid #ececec;
+  padding-top: 0.9rem;
+}
+
+.signup-success-section-title {
+  margin: 0 0 0.45rem;
+  font-size: 1.05rem;
+}
+
+.signup-success-rich > *:first-child {
+  margin-top: 0;
+}
+
+.signup-success-rich > *:last-child {
+  margin-bottom: 0;
+}
+
+.signup-success-actions {
+  padding-top: 0.25rem;
+}
+
+.error-page {
+  display: flex;
+  justify-content: center;
+}
+
+.error-shell {
+  width: min(760px, 100%);
+}
+
+.error-card {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 1.25rem 1.3rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  display: grid;
+  gap: 0.8rem;
+}
+
+.error-kicker {
+  margin: 0;
+  font-size: 0.86rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #a63e3e;
+  font-weight: 700;
+}
+
+.error-heading {
+  margin: 0;
+}
+
+.error-message,
+.error-context,
+.error-detail,
+.error-support-label,
+.error-support-link {
+  margin: 0;
+}
+
+.error-context,
+.error-detail {
+  color: #555;
+  font-size: 0.95rem;
+}
+
+.error-support {
+  margin-top: 0.2rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid #edd1d1;
+  border-radius: 8px;
+  background: #fff8f8;
+}
+
+.error-support-label {
+  font-weight: 700;
+  margin-bottom: 0.15rem;
+}
+
+.error-support-link a {
+  font-weight: 600;
+  color: #782f9a;
+}
+
+.error-actions {
+  margin-top: 0.15rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
 .slots {
   font-weight: bold;
 }
@@ -1356,6 +1522,24 @@ form.signup {
 
 .form-group.form-toggle-row > label {
   margin-bottom: 0;
+}
+
+.event-form-box {
+  border: 1px solid #c7c7c7;
+  border-radius: 8px;
+  background-color: #fff;
+  padding: 14px 16px 4px;
+  margin: 0 0 15px;
+}
+
+.event-form-box legend {
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 0 6px;
+}
+
+.event-form-box .form-group:last-child {
+  margin-bottom: 10px;
 }
 
 .field-label-row {
@@ -1505,6 +1689,18 @@ form.signup {
     width: 100%;
     text-align: center;
     margin: 5px 0;
+  }
+
+  .signup-success-card {
+    padding: 1rem;
+  }
+
+  .signup-success-meta {
+    gap: 0.5rem;
+  }
+
+  .error-card {
+    padding: 1rem;
   }
 }
 

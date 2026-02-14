@@ -353,6 +353,36 @@ test("POST /signup creates signup and renders success", async () => {
   assert.equal(state.sesEmails.length, 1);
 });
 
+test("POST /signup renders fulfilled error when strict capacity is reached", async () => {
+  const { state } = loadAppWithMocks({
+    db: {
+      isAdmin: async () => false,
+      createSignup: async () => ({ status: "fulfilled", remaining: 0 }),
+    },
+  });
+
+  const handler = state.routes.post.get("/signup");
+  const req = createReq({
+    body: {
+      item: "4",
+      event: "8",
+      quantity: "3",
+      comment: "Will arrive early",
+      submission_token: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    },
+    cookies: { token: "valid-token" },
+  });
+  const res = createRes();
+
+  await handler(req, res);
+
+  assert.equal(res.statusCode, 409);
+  assert.equal(res.renderCalls.length, 1);
+  assert.equal(res.renderCalls[0].view, "error");
+  assert.equal(res.renderCalls[0].data.heading, "Signup fulfilled");
+  assert.equal(state.sesEmails.length, 0);
+});
+
 test("POST /signup treats duplicate submission token as already processed", async () => {
   const duplicateError = new Error("duplicate key value violates unique constraint");
   duplicateError.code = "23505";
@@ -446,6 +476,7 @@ test("POST /admin/event creates event and associates shelters", async () => {
       active: "on",
       adopt_signup: "true",
       allow_kids: "true",
+      allow_overage: "on",
       kid_title: "",
       kid_notes: "",
       kid_comments_label: "",
@@ -466,6 +497,7 @@ test("POST /admin/event creates event and associates shelters", async () => {
   assert.equal(createdEventPayload.alert_email, "events-alerts@example.com");
   assert.equal(createdEventPayload.alert_on_signup, true);
   assert.equal(createdEventPayload.alert_on_cancellation, true);
+  assert.equal(createdEventPayload.allow_overage, true);
   assert.equal(res.redirectCalls[0], "/admin/event/901");
   assert.equal(linkedShelters.eventId, 901);
   assert.equal(linkedShelters.shelterIds.join(","), "5,6,31,32");

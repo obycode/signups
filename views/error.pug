@@ -9,17 +9,22 @@ html
     include header
     .outer-main
       main
-        section(class="Main-content")
-          h2 #{heading || "Something went wrong"}
-          p #{message || "Please try again. If the problem persists, let us know."}
-          if context
-            p Context: #{context}
-          if error
-            p #{error}
-          if supportEmail
-            p #[a(href=`mailto:${supportEmail}?subject=Error` target="_blank") #{supportEmail}]
-          p
-            a(class="button-style button-style3" href="javascript:history.back()") Go Back
-            | 
-            a(class="button-style button-style2" href="/") Home
+        section(class="Main-content error-page")
+          .error-shell
+            .error-card
+              p.error-kicker Something Went Wrong
+              h2.error-heading #{heading || "Something went wrong"}
+              p.error-message #{message || "Please try again. If the problem persists, let us know."}
+              if context
+                p.error-context Context: #{context}
+              if error
+                p.error-detail #{error}
+              if supportEmail
+                .error-support
+                  p.error-support-label Need help? Contact support:
+                  p.error-support-link
+                    a(href=`mailto:${supportEmail}?subject=Error` target="_blank") #{supportEmail}
+              .error-actions
+                a(class="button-style button-style3" href="javascript:history.back()") Go Back
+                a(class="button-style button-style2" href="/") Home
       include footer

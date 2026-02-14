@@ -968,7 +968,31 @@ app.post(
     let createdNewSignup = true;
 
     try {
-      signup_id = await createSignup(signup);
+      const signupResult = await createSignup(signup);
+      if (
+        signupResult &&
+        typeof signupResult === "object" &&
+        signupResult.status === "fulfilled"
+      ) {
+        return renderError(res, {
+          status: 409,
+          heading: "Signup fulfilled",
+          message:
+            "This signup was fulfilled before your request could be completed. Please choose another option.",
+          context: "Signup submitted",
+          error: "Signup fulfilled",
+        });
+      }
+
+      if (
+        signupResult &&
+        typeof signupResult === "object" &&
+        signupResult.status === "created"
+      ) {
+        signup_id = signupResult.id;
+      } else {
+        signup_id = signupResult;
+      }
     } catch (err) {
       const duplicateSubmission =
         err &&
@@ -1274,6 +1298,10 @@ app.post(
       .optional({ checkFalsy: true })
       .isIn(["on", "off", "true", "false"])
       .withMessage("Invalid value for allow_kids"),
+    check("allow_overage", "Allow overage is invalid")
+      .optional({ checkFalsy: true })
+      .isIn(["on", "off", "true", "false"])
+      .withMessage("Invalid value for allow_overage"),
     check("alert_email")
       .optional({ nullable: true, checkFalsy: true })
       .isEmail()
@@ -1316,6 +1344,7 @@ app.post(
       form_code: uuidv4(),
       adopt_signup: req.body.adopt_signup,
       allow_kids: req.body.allow_kids,
+      allow_overage: req.body.allow_overage,
       kid_title: req.body.kid_title,
       kid_notes: req.body.kid_notes,
       kid_comments_label: req.body.kid_comments_label,
@@ -1368,6 +1397,11 @@ app.post(
     } else {
       req.body.allow_kids = false;
     }
+    if (req.body.allow_overage === "on" || req.body.allow_overage === "true") {
+      req.body.allow_overage = true;
+    } else {
+      req.body.allow_overage = false;
+    }
     if (
       req.body.alert_on_signup === "on" ||
       req.body.alert_on_signup === "true"
@@ -1388,6 +1422,7 @@ app.post(
     event.active = req.body.active;
     event.adopt_signup = req.body.adopt_signup;
     event.allow_kids = req.body.allow_kids;
+    event.allow_overage = req.body.allow_overage;
     event.alert_on_signup = req.body.alert_on_signup;
     event.alert_on_cancellation = req.body.alert_on_cancellation;
     event.alert_email = event.alert_email || null;
@@ -1534,6 +1569,10 @@ app.post(
       .optional({ checkFalsy: true })
       .isIn(["on", "off", "true", "false"])
       .withMessage("Invalid value for allow_kids"),
+    check("allow_overage", "Allow overage is invalid")
+      .optional({ checkFalsy: true })
+      .isIn(["on", "off", "true", "false"])
+      .withMessage("Invalid value for allow_overage"),
     check("alert_email")
       .optional({ nullable: true, checkFalsy: true })
       .isEmail()
@@ -1590,6 +1629,7 @@ app.post(
         active: req.body.active,
         adopt_signup: req.body.adopt_signup,
         allow_kids: req.body.allow_kids,
+        allow_overage: req.body.allow_overage,
         alert_email: req.body.alert_email ? req.body.alert_email.trim() : "",
         alert_on_signup: req.body.alert_on_signup,
         alert_on_cancellation: req.body.alert_on_cancellation,
@@ -1627,6 +1667,11 @@ app.post(
     } else {
       req.body.allow_kids = false;
     }
+    if (req.body.allow_overage === "on" || req.body.allow_overage === "true") {
+      req.body.allow_overage = true;
+    } else {
+      req.body.allow_overage = false;
+    }
     if (
       req.body.alert_on_signup === "on" ||
       req.body.alert_on_signup === "true"
@@ -1653,6 +1698,7 @@ app.post(
       active: req.body.active,
       adopt_signup: req.body.adopt_signup,
       allow_kids: req.body.allow_kids,
+      allow_overage: req.body.allow_overage,
       alert_email: req.body.alert_email ? req.body.alert_email.trim() : null,
       alert_on_signup: req.body.alert_on_signup,
       alert_on_cancellation: req.body.alert_on_cancellation,

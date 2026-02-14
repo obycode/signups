@@ -31,6 +31,7 @@ async function ensureEventsTable(client) {
         kid_comments_help TEXT,
         kid_needed INTEGER,
         allow_kids BOOLEAN DEFAULT TRUE,
+        allow_overage BOOLEAN DEFAULT FALSE,
         alert_email TEXT,
         alert_on_signup BOOLEAN DEFAULT FALSE,
         alert_on_cancellation BOOLEAN DEFAULT FALSE
@@ -41,6 +42,7 @@ async function ensureEventsTable(client) {
     await client.query(`
       ALTER TABLE events
         ADD COLUMN IF NOT EXISTS alert_email TEXT,
+        ADD COLUMN IF NOT EXISTS allow_overage BOOLEAN DEFAULT FALSE,
         ADD COLUMN IF NOT EXISTS alert_on_signup BOOLEAN DEFAULT FALSE,
         ADD COLUMN IF NOT EXISTS alert_on_cancellation BOOLEAN DEFAULT FALSE;
     `);
@@ -380,8 +382,8 @@ function shelterIdLabel(shelterId) {
 async function createEvent(event) {
   const result = await pool.query(
     `
-    INSERT INTO events (title, summary, description, email_info, image, active, form_code, adopt_signup, kid_title, kid_notes, kid_email_info, kid_comments_label, kid_comments_help, kid_needed, allow_kids, alert_email, alert_on_signup, alert_on_cancellation)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+    INSERT INTO events (title, summary, description, email_info, image, active, form_code, adopt_signup, kid_title, kid_notes, kid_email_info, kid_comments_label, kid_comments_help, kid_needed, allow_kids, allow_overage, alert_email, alert_on_signup, alert_on_cancellation)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
     RETURNING id
   `,
     [
@@ -400,6 +402,7 @@ async function createEvent(event) {
       event.kid_comments_help,
       event.kid_needed,
       event.allow_kids,
+      event.allow_overage,
       event.alert_email,
       event.alert_on_signup,
       event.alert_on_cancellation,
@@ -463,12 +466,12 @@ async function updateEvent(event_id, event) {
     title = $1, summary = $2, description = $3, email_info = $4, active = $5,
     adopt_signup = $6, kid_title = $7, kid_notes = $8, kid_email_info = $9,
     kid_comments_label = $10, kid_comments_help = $11, kid_needed = $12, allow_kids = $13,
-    alert_email = $14, alert_on_signup = $15, alert_on_cancellation = $16
-    ${event.image ? ", image = $17" : ""}
+    allow_overage = $14, alert_email = $15, alert_on_signup = $16, alert_on_cancellation = $17
+    ${event.image ? ", image = $18" : ""}
   `;
 
   // Use the correct positional placeholder for the WHERE clause
-  const whereClause = `WHERE id = ${event.image ? "$18" : "$17"}`;
+  const whereClause = `WHERE id = ${event.image ? "$19" : "$18"}`;
 
   // Combine the query
   const query = `
@@ -493,6 +496,7 @@ async function updateEvent(event_id, event) {
         event.kid_comments_help,
         event.kid_needed,
         event.allow_kids,
+        event.allow_overage,
         event.alert_email,
         event.alert_on_signup,
         event.alert_on_cancellation,
@@ -513,6 +517,7 @@ async function updateEvent(event_id, event) {
         event.kid_comments_help,
         event.kid_needed,
         event.allow_kids,
+        event.allow_overage,
         event.alert_email,
         event.alert_on_signup,
         event.alert_on_cancellation,
@@ -869,21 +874,77 @@ async function getMagicCodeForUser(user_id) {
 // SIGNUPS
 
 async function createSignup(signup) {
-  const result = await pool.query(
-    `
-    INSERT INTO signups (item_id, user_id, quantity, comment, submission_token)
-    VALUES ($1, $2, $3, $4, $5)
-    RETURNING id
-  `,
-    [
-      signup.item_id,
-      signup.user_id,
-      signup.quantity,
-      signup.comment,
-      signup.submission_token || null,
-    ],
-  );
-  return result.rows[0].id;
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const itemResult = await client.query(
+      `
+        SELECT items.needed, items.active, COALESCE(events.allow_overage, FALSE) AS allow_overage
+        FROM items
+        JOIN events ON events.id = items.event_id
+        WHERE items.id = $1
+        FOR UPDATE
+      `,
+      [signup.item_id],
+    );
+
+    if (itemResult.rows.length === 0 || !itemResult.rows[0].active) {
+      await client.query("ROLLBACK");
+      return { status: "fulfilled", reason: "item_inactive" };
+    }
+
+    const item = itemResult.rows[0];
+    const strictCapacity = !item.allow_overage;
+
+    if (strictCapacity && item.needed > 0) {
+      const currentResult = await client.query(
+        `
+          SELECT COALESCE(SUM(quantity), 0) AS current_quantity
+          FROM signups
+          WHERE item_id = $1 AND canceled_at IS NULL
+        `,
+        [signup.item_id],
+      );
+
+      const currentQuantity = parseInt(
+        currentResult.rows[0].current_quantity,
+        10,
+      );
+      const needed = parseInt(item.needed, 10);
+      const requested = parseInt(signup.quantity, 10);
+      const remaining = needed - currentQuantity;
+
+      if (requested > remaining) {
+        await client.query("ROLLBACK");
+        return { status: "fulfilled", remaining: Math.max(remaining, 0) };
+      }
+    }
+
+    const result = await client.query(
+      `
+        INSERT INTO signups (item_id, user_id, quantity, comment, submission_token)
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING id
+      `,
+      [
+        signup.item_id,
+        signup.user_id,
+        signup.quantity,
+        signup.comment,
+        signup.submission_token || null,
+      ],
+    );
+
+    await client.query("COMMIT");
+    return { status: "created", id: result.rows[0].id };
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
 }
 
 async function getActiveSignupsForUser(user_id) {

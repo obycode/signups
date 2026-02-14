@@ -9,24 +9,41 @@ html
     include header
     .outer-main
       main
-        section(class="Main-content")
-          p Sign up successful! We've sent these details to your email.
-          if event.email_info
-            p !{event.email_info}
-          if item.title
-            h3 #{item.title}
-          if item.email_info
-            p !{item.email_info}
-          if item.start_time && item.end_time
-            p #{item.start} - #{item.end}
-          else if item.end_time
-            p Deadline: #{item.end}
-          p !{item.notes}
-          if item.emailInfo
-            p !{item.emailInfo}
-          p Signed up for: #{count}
-          if comment
-            p Comment: #{comment}
-          p
-            a(href=`/event/${event.id}` class='button-style button-style1') Sign up for another
+        section(class="Main-content signup-success-page")
+          .signup-success-shell
+            .signup-success-banner
+              p.signup-success-kicker Signup Confirmed
+              p.signup-success-copy Sign up successful! We've sent these details to your email.
+            .signup-success-card
+              .signup-success-item
+                if item.title
+                  h3.signup-success-title #{item.title}
+                if item.start_time && item.end_time
+                  p.signup-success-time #{item.start} - #{item.end}
+                else if item.end_time
+                  p.signup-success-time Deadline: #{item.end}
+              .signup-success-meta
+                p.signup-success-quantity Signed up for: #[strong #{count}]
+                if comment
+                  p.signup-success-comment
+                    span Comment:
+                    |  #{comment}
+              if event.email_info
+                .signup-success-section
+                  h4.signup-success-section-title Event Details
+                  .signup-success-rich !{event.email_info}
+              if item.email_info
+                .signup-success-section
+                  h4.signup-success-section-title Item Details
+                  .signup-success-rich !{item.email_info}
+              if item.notes
+                .signup-success-section
+                  h4.signup-success-section-title Notes
+                  .signup-success-rich !{item.notes}
+              if item.emailInfo
+                .signup-success-section
+                  h4.signup-success-section-title Additional Details
+                  .signup-success-rich !{item.emailInfo}
+              .signup-success-actions
+                a(href=`/event/${event.id}` class='button-style button-style1') Sign up for another
       include footer
