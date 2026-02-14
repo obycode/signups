@@ -24,9 +24,10 @@ html
                   - const needed = Number(item.needed) || 0;
                   - const signups = Number(item.signups) || 0;
                   - const remaining = Math.max(needed - signups, 0);
+                  - const almostThreshold = Math.max(1, Math.ceil(needed * 0.10));
                   - const progress = needed > 0 ? Math.min(100, Math.round((signups / needed) * 100)) : 100;
                   - const isFull = needed > 0 && signups >= needed;
-                  - const isAlmost = !isFull && needed > 0 && remaining <= 2;
+                  - const isAlmost = !isFull && needed > 1 && remaining <= almostThreshold;
                   - const badgeLabel = isFull ? 'Needs Met' : (isAlmost ? 'Almost Full' : 'Open');
                   article.event-item-card(class=isFull ? 'is-full' : isAlmost ? 'is-almost' : 'is-open')
                     .event-item-main
